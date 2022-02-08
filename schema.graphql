@@ -1,0 +1,250 @@
+"""
+Protocol represents all aggregated information of a single protocol on a single network.
+"""
+type Protocol @entity {
+    "The Name of the Protocol"
+    id: ID!
+    "The Network the protocol exists on - Ethereum, Polygon, Avalanche, etc."
+    network: String!
+    totalAssetsInEth: BigInt! # note, multichain, means ETH may not be the only option here. but it is probably the prevalent one.
+    totalAssetsInUSD: BigInt!
+    assetList: [Bytes!]!
+    lifetimeBorrowCount: BigInt!
+    lifetimeSuppliedCount: BigInt!
+    lifetimeLiquidatedCount: BigInt!
+    lifetimeBorrowAmount: BigInt!
+    lifetimeSuppliedAmount: BigInt!
+    lifetimeLiquidatedAmount: BigInt! # Could be a good signal for protocol reliability. in the same way that people pointed out binances liquidation engine was not as good because more liquidations were happening there (or their users more risky)
+    "True if the protocol mints a collateral backed synthetic tokens (i.e. DAI, MIM, sUSD)"
+    isSynthetic: Boolean!
+
+}
+
+type Market @entity {
+    id: ID!
+    protocol: Protocol!
+    totalAssetsInEth: BigInt! # note, multichain, means ETH may not be the only option here. but it is probably the prevalent one.
+    totalAssetsInUSD: BigInt!
+    asset: Bytes!
+    lifetimeBorrowCount: BigInt!
+    lifetimeSuppliedCount: BigInt!
+    lifetimeLiquidatedCount: BigInt!
+    lifetimeBorrowAmount: BigInt!
+    lifetimeSuppliedAmount: BigInt!
+    lifetimeLiquidatedAmount: BigInt! # Could be a good signal for protocol reliability. in the same way that people pointed out binances liquidation engine was not as good because more liquidations were happening there (or their users more risky)
+}
+
+
+type Account @entity {
+    id: ID!
+    
+    borrowEvents: [Borrow!]!
+    borrowCount: Int!
+    borrowedAmount: BigInt!
+    currentBorrowOutstanding: BigInt!
+
+    repayEvents: [Repay!]!
+
+    lifetimeInterestAccumulated: Int!
+
+
+
+    depositEvents: [Borrow!]!
+    depositCount: Int!
+    depositAmount: BigInt!
+    currentDeposits: BigInt!
+
+    redeemEvents: [Redeem!]!
+
+    liquidatedCount: Int!
+    totalLiquidatedAmount: BigInt!
+
+    liquidatorCount: Int!
+    totalLiquidatorAmount: BigInt!
+
+
+    protocols: [Protocol!]!
+    markets: [Market!]! # Where a market is within a protocol
+    cdps: [CDP!]! # Where a CDP acts like an isolated lending market
+}
+
+# An accounts history within a single market
+type AccountMarket @entity {
+    # Everything the same as Account, except for the markets entity
+}
+
+# An accounts history within a single Protocol
+type AccountProtocol @entity {
+    # a combination of all the markets of a single protocol
+}
+
+type Asset @entity {
+    id: ID!
+    symbol: String!
+}
+
+
+"""
+An event represents something that happened on chain in the Lending Protocol. This includes Deposit, Withdraw, Borrow, Repay, and Liquidate
+"""
+interface Event {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset transferred"
+    asset: Asset!
+    "Amount of Tokens transferred"
+    amount: BigDecimal!
+    "Amount transferred in USD"
+    amountUSD: BigDecimal
+    "Account that received tokens"
+    to: Account!
+    "Account that sent tokens"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol the event originated from"
+    market: Market!
+}
+
+
+"""
+Deposit collateral
+"""
+type Deposit implements Event @entity {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset deposited"
+    asset: Asset!
+    "Amount of tokens deposited into the protocol"
+    amount: BigDecimal!
+    "Amount deposited in USD"
+    amountUSD: BigDecimal
+    "Protocol contract that received tokens"
+    to: Account!
+    "Account that sent tokens"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol that the event originated from"
+    market: Market!
+}
+
+"""
+Withdraw collateral
+"""
+type Withdraw implements Event @entity {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset withdrawn"
+    asset: Asset!
+    "Amount of tokens being withdrawn from the protocol"
+    amount: BigDecimal!
+    "Amount withdrawn in USD"
+    amountUSD: BigDecimal
+    "Account that received tokens"
+    to: Account!
+    "Protocol contract that sent tokens"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol the event originated from"
+    market: Market!
+}
+
+"""
+Borrow an asset
+"""
+type Borrow implements Event @entity {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset borrowed"
+    asset: Asset!
+    "Amount of tokens borrowed from the protocol"
+    amount: BigDecimal!
+    "Amount borrowed in USD"
+    amountUSD: BigDecimal
+    "Account that received tokens"
+    to: Account!
+    "Protocol contract that sent borrowed tokens"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol the event originated from"
+    market: Market!
+}
+
+"""
+Repay a borrowed asset
+"""
+type Repay implements Event @entity {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset repaid"
+    asset: Asset!
+    "Amount of tokens repaid to the protocol"
+    amount: BigDecimal!
+    "Amount repaid in USD"
+    amountUSD: BigDecimal
+    "Protocol contract that received repayment"
+    to: Account!
+    "Account that owed the asset"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol the event originated from"
+    market: Market!
+    "Payer of the debt. Payer is not always the same as borrower. i.e. a liquidation"
+    payer: Account!
+}
+
+"""
+Liquidate an Account that went below the safe borrowing threshold
+"""
+type Liquidate implements Event @entity {
+    "Transaction hash concatenated with log index"
+    id: ID!
+    "Asset repaid"
+    asset: Asset!
+    "Amount of tokens repaid to the protocol"
+    amount: BigDecimal!
+    "Amount repaid in USD"
+    amountUSD: BigDecimal
+    "Protocol contract that received repayment"
+    to: Account!
+    "Account that owed the asset"
+    from: Account!
+    "Block number"
+    blockNumber: Int!
+    "Block timestamp"
+    blockTime: Int!
+    "The protocol the event originated from"
+    protocol: Protocol!
+    "The market within a protocol the event originated from"
+    market: Market!
+    "Liqudator that paid the debt"
+    liquidator: Account!
+    "Amount of collateral asset received"
+    received: BigDecimal!
+    "Profit of the liquidator based on the protocol liquidation fee"
+    profit: BigDecimal!
+}

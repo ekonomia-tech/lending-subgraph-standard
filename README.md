@@ -22,6 +22,8 @@ Below is a general framework
 - `FlashLoan implements Borrow` - A Flashloan is an under-collateralized single block `Borrow`
 
 # Other thoughts
+## Basic Transfers
+- If you transfer a cToken from one account to another, it needs to be withdrew from the original account, and then deposited into the new account. (Note - this makes for a complex scenario when a cToken or aToken has appreciated in value).
 ## Minting and Supplying
 - Often you `Deposit` a collateral token, and you immediately mint a lending protocol token (i.e. supply USDC, get cUSDC in Compound)
 - When opening a CDP, you supply collateral, and you immediately mint a collateral backed asset like DAI.
@@ -32,6 +34,10 @@ Below is a general framework
 - I deliberately exclude `cTokens` and `aTokens` from the schema, as they are representation of collateral, and not the collateral itself.
 - This has the downside of not being able to understand how the collateral is growing.
 - This will be included in Future Work.
+
+## Having a USD price and an ETH price
+- Should we include a price in eth for the debts and collaterals? I would say no, because if this is to be generalized, then it could be on a protocol like Polygon. Or some non-EVM chain. Thus, I am excluding it for now.
+- USD price is included because it is general, and so much lending in crypto revolves around stablecoins and leverage.
 
 # Future Work
 - Incorporate borrow and supply rates
