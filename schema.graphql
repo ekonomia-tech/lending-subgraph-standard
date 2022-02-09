@@ -1,23 +1,63 @@
+enum LendingType {
+    CDP
+    Pooled
+}
+
+enum RiskType {
+    GlobalRisk
+    IsolatedRisk
+}
+
 """
 Protocol represents all aggregated information of a single protocol on a single network.
 """
 type Protocol @entity {
     "The Name of the Protocol"
     id: ID!
-    "The Network the protocol exists on - Ethereum, Polygon, Avalanche, etc."
+    "The Network the protocol exists on - Ethereum, Polygon, etc."
     network: String!
-    totalAssetsInEth: BigInt! # note, multichain, means ETH may not be the only option here. but it is probably the prevalent one.
-    totalAssetsInUSD: BigInt!
-    assetList: [Bytes!]!
-    lifetimeBorrowCount: BigInt!
-    lifetimeSuppliedCount: BigInt!
-    lifetimeLiquidatedCount: BigInt!
-    lifetimeBorrowAmount: BigInt!
-    lifetimeSuppliedAmount: BigInt!
-    lifetimeLiquidatedAmount: BigInt! # Could be a good signal for protocol reliability. in the same way that people pointed out binances liquidation engine was not as good because more liquidations were happening there (or their users more risky)
-    "True if the protocol mints a collateral backed synthetic tokens (i.e. DAI, MIM, sUSD)"
-    isSynthetic: Boolean!
+    "Type of lending protocol"
+    type: LendingType!
+    "Type of risk"
+    riskType: RiskType!
 
+    "Current deposited amount of all collateral types in USD"
+    depositedUSD: BigDecimal!
+    "Current borrowed amount of all borrowed assets in USD"
+    borrowedUSD: BigDecimal!
+
+    "Accumulated deposited amount in USD"
+    lifetimeDepositedUSD: BigInt!
+    "Accumulated withdrawn amount in USD"
+    lifetimeWithdrawnUSD: BigInt!
+    "Accumulated borrowed amount in USD"
+    lifetimeBorrowedUSD: BigDecimal
+    "Accumulated repaid amount in USD"
+    lifetimeRepaidUSD: BigDecimal!
+    "Accumulated liquidated amount in USD"
+    lifetimeLiquidatedUSD: BigDecimal!
+
+    "The number of time Deposits have occurred in all markets"
+    depositCount: BigInt!
+    "The number of time Withdraws have occurred in all markets"
+    withdrawCount: BigInt!
+    "The number of time Borrows have occurred in all markets"
+    borrowCount: BigInt!
+    "The number of time Repays have occurred in all markets"
+    repayCount: BigInt!
+    "The number of time Liquidations have occurred in all markets"
+    liquidatedCount: BigInt!
+
+    "All Deposit events in every Market"
+    deposits: [Deposit!]! @derivedFrom(field: "protocol")
+    "All Withdraw events in every Market"
+    withdraws: [Withdraw!]! @derivedFrom(field: "protocol")
+    "All Borrow events in every Market"
+    borrows: [Borrow!]! @derivedFrom(field: "protocol")
+    "All Repay events in every Market"
+    repays: [Repay!]! @derivedFrom(field: "protocol")
+    "All Liquidation events in every Market"
+    liquidations: [Liquidate!]! @derivedFrom(field: "protocol")
 }
 
 """
@@ -30,6 +70,7 @@ type Market @entity {
     name: String! # Should be derived from onchain data
     "The Protocol the Market is a part of"
     protocol: Protocol!
+
     "Asset deposited in the market as collateral"
     depositAsset: Asset!
     "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
@@ -50,7 +91,7 @@ type Market @entity {
     "Accumulated withdrawn amount in depositAsset"
     lifetimeWithdrawn: BigInt!
     "Accumulated withdrawn amount in USD"
-    lifetimeWithdrawnAmount: BigInt!
+    lifetimeWithdrawnUSD: BigInt!
     "Accumulated borrowed amount in borrowAsset"
     lifetimeBorrowed: BigInt!
     "Accumulated borrowed amount in USD"
@@ -76,15 +117,15 @@ type Market @entity {
     liquidatedCount: BigInt!
 
     "All Deposit events"
-    deposits: [Deposit!]!
+    deposits: [Deposit!]! @derivedFrom(field: "market")
     "All Withdraw events"
-    withdraws: [Withdraw!]!
+    withdraws: [Withdraw!]! @derivedFrom(field: "market")
     "All Borrow events"
-    borrows: [Borrow!]!
+    borrows: [Borrow!]! @derivedFrom(field: "market")
     "All Repay events"
-    repays: [Repay!]!
+    repays: [Repay!]! @derivedFrom(field: "market")
     "All Liquidation events"
-    liquidations: [Liquidate!]!
+    liquidations: [Liquidate!]! @derivedFrom(field: "market")
 }
 
 """
