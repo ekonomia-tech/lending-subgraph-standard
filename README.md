@@ -7,7 +7,7 @@ The existing decentralized lending protocol all have slightly different twists t
 - Aave & Comp - Pooled. Global risk. Multi-asset. Borrow assets that are deposited
 - Maker & Abracadabra - Collateralized Debt Positions (CDPs). Isolated. Borrow a single synthetic asset minted, such as DAI or MIM.
 - Synthetix - Pooled. Global risk. Single asset as collateral (SNX). sUSD and many other synthetic assets minted. 
-- RAI - CDP, single asset as collateral, ETH. Borrow a single synthetic asset, RAI.
+- RAI, Liquity - CDP, single asset as collateral, ETH. Borrow a single synthetic asset, RAI or LUSD.
 
 ## Generalizing a lending protocol
 Each protocol implements their functions, their events, their token minting and token transfers, differently. This means we have to make a very general schema to support all of these possibilities.
@@ -35,6 +35,13 @@ Below is a general framework
 - This has the downside of not being able to understand how the collateral is growing.
 - This will be included in Future Work.
 
+## How to record CDPs
+- We aggregate all the CDPs/Vaults that users create into one `Market`.
+## Seperate Pools under one protocol
+- Aave has two "Pools" on mainnet ethereum. One for normal ERC-20 assets, and another for AMM tokens. 
+- We split these into two protocols, as they are completely isolated in reality. 
+
+
 ## Having a USD price and an ETH price
 - Should we include a price in eth for the debts and collaterals? I would say no, because if this is to be generalized, then it could be on a protocol like Polygon. Or some non-EVM chain. Thus, I am excluding it for now.
 - USD price is included because it is general, and so much lending in crypto revolves around stablecoins and leverage.
@@ -42,7 +49,7 @@ Below is a general framework
 # Future Work
 - Incorporate borrow and supply rates
 - Incorporate representations of collateral and debt, such as `cTokens` and `aTokens`.
-
+- There is a possibility we could included CDP specific data in the future. But it might stay abstracted away from the Subgraph. Time will tell.
 # Open Questions
 - Credit delegation can be implemented by separating the `sender` of transactions apart from the `from` or `to`, and also tracking the function calls that create delegation. But, every protocol implements this differently, and some not at all. The question is, how to implement this properly? It involves understanding how it works across all protocols and making sure that no events are screwed, as this can confuse the subgraph.
 - Should gasPrice or transactionFee be included?

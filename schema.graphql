@@ -20,21 +20,76 @@ type Protocol @entity {
 
 }
 
+"""
+A single Market within a protocol. A Market can be a single pool where all assets are pooled together. It can also be a combination of Collateralized Debt Positions (CDPs). The CDPs are aggregated together to represent a uniform Market.
+"""
 type Market @entity {
-    id: ID!
+    "Contract address"
+    id: ID! # TODO - some ambiguity here. Some markets might not have their own contract address
+    "Name of the Market"
+    name: String! # Should be derived from onchain data
+    "The Protocol the Market is a part of"
     protocol: Protocol!
-    totalAssetsInEth: BigInt! # note, multichain, means ETH may not be the only option here. but it is probably the prevalent one.
-    totalAssetsInUSD: BigInt!
-    asset: Bytes!
-    lifetimeBorrowCount: BigInt!
-    lifetimeSuppliedCount: BigInt!
-    lifetimeLiquidatedCount: BigInt!
-    lifetimeBorrowAmount: BigInt!
-    lifetimeSuppliedAmount: BigInt!
-    lifetimeLiquidatedAmount: BigInt! # Could be a good signal for protocol reliability. in the same way that people pointed out binances liquidation engine was not as good because more liquidations were happening there (or their users more risky)
+    "Asset deposited in the market as collateral"
+    depositAsset: Asset!
+    "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
+    borrowAsset: Asset!
+    "Current deposit amount in depositAsset"
+    deposited: BigDecimal!
+    "Current deposit amount in USD"
+    depositedUSD: BigDecimal!
+    "Current borrow amount in borrowAsset"
+    borrowed: BigDecimal!
+    "Current borrow amount in USD"
+    borrowedUSD: BigDecimal!
+
+    "Accumulated deposited amount in depositAsset"
+    lifetimeDeposited: BigInt!
+    "Accumulated deposited amount in USD"
+    lifetimeDepositedUSD: BigInt!
+    "Accumulated withdrawn amount in depositAsset"
+    lifetimeWithdrawn: BigInt!
+    "Accumulated withdrawn amount in USD"
+    lifetimeWithdrawnAmount: BigInt!
+    "Accumulated borrowed amount in borrowAsset"
+    lifetimeBorrowed: BigInt!
+    "Accumulated borrowed amount in USD"
+    lifetimeBorrowedUSD: BigDecimal
+    "Accumulated repaid amount in borrowAsset"
+    lifetimeRepaid: BigDecimal
+    "Accumulated repaid amount in USD"
+    lifetimeRepaidUSD: BigDecimal!
+    "Accumulated liquidated amount in depositAsset"
+    lifetimeLiquidated: BigDecimal!
+    "Accumulated liquidated amount in USD"
+    lifetimeLiquidatedUSD: BigDecimal!
+
+    "The number of time Deposits have occurred"
+    depositCount: BigInt!
+    "The number of time Withdraws have occurred"
+    withdrawCount: BigInt!
+    "The number of time Borrows have occurred"
+    borrowCount: BigInt!
+    "The number of time Repays have occurred"
+    repayCount: BigInt!
+    "The number of time Liquidations have occurred"
+    liquidatedCount: BigInt!
+
+    "All Deposit events"
+    deposits: [Deposit!]!
+    "All Withdraw events"
+    withdraws: [Withdraw!]!
+    "All Borrow events"
+    borrows: [Borrow!]!
+    "All Repay events"
+    repays: [Repay!]!
+    "All Liquidation events"
+    liquidations: [Liquidate!]!
 }
 
-
+"""
+An account that has interacted with at least 1 lending protocol
+"""
 type Account @entity {
     id: ID!
     
@@ -65,7 +120,6 @@ type Account @entity {
 
     protocols: [Protocol!]!
     markets: [Market!]! # Where a market is within a protocol
-    cdps: [CDP!]! # Where a CDP acts like an isolated lending market
 }
 
 # An accounts history within a single market
@@ -78,11 +132,15 @@ type AccountProtocol @entity {
     # a combination of all the markets of a single protocol
 }
 
+"""
+An asset used in a lending protocol
+"""
 type Asset @entity {
+    "Contract address"
     id: ID!
+    "Token symbol"
     symbol: String!
 }
-
 
 """
 An event represents something that happened on chain in the Lending Protocol. This includes Deposit, Withdraw, Borrow, Repay, and Liquidate
@@ -109,7 +167,6 @@ interface Event {
     "The market within a protocol the event originated from"
     market: Market!
 }
-
 
 """
 Deposit collateral
