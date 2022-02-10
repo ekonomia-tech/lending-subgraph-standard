@@ -46,10 +46,33 @@ Below is a general framework
 - Should we include a price in eth for the debts and collaterals? I would say no, because if this is to be generalized, then it could be on a protocol like Polygon. Or some non-EVM chain. Thus, I am excluding it for now.
 - USD price is included because it is general, and so much lending in crypto revolves around stablecoins and leverage.
 
+## Calculating USD in the protocol is too messy, and even in Markets a bit messy
+- Protocol because it is a Many of Many aggregation, that depends on many USD conversion prices
+- Markets is one-to-many for some markets (DAI, RAI), and many-to-many (Aave, Compound)
+- not worth it, need to QUERY to aggregate
+
+## New mention about USD price
+- For lifetime, it is calculate at the moment, and stored
+- For current, it must be calculate as `price * asset` , where price is the asset value in USD
+- could mention how etherscan does it, and figure out if it relates to what we are doing.
+## You do not need AccoumtInProtocol and AccountInMarket to derive events
+- Its a derivation that relies on querying in postgres underneath. 
+- So we can also just filter on the top level of Account, to get what we want here.
+
+## Counts can be calculated by calculating the array of deposits withdraws, etc
+- So.... maybe I should remove them. They muddy up the subgraph
+
+## Implmentatin order
+- Do the events first - straight forward. Check out the indexing speed 
+- Then do all the required stuff - real asset amounts held by accounts and protocols
+- Then USD cuz it will be complicated and it will be nice to have it first, rather than add it into lines of code after the lifetimes part
+- Then do lifetimes
 # Future Work
 - Incorporate borrow and supply rates
 - Incorporate representations of collateral and debt, such as `cTokens` and `aTokens`.
 - There is a possibility we could included CDP specific data in the future. But it might stay abstracted away from the Subgraph. Time will tell.
+- Lifetime interest earned on Protocols and Markets
+- Writing a test suite that confirms the numbers add up for lifetime values, split up and down the Accounts, Markets and Users. (It also makes me think, query time computation could calucate this. but it is always a battle of pre-compute vs. compute just-in-time)
 # Open Questions
 - Credit delegation can be implemented by separating the `sender` of transactions apart from the `from` or `to`, and also tracking the function calls that create delegation. But, every protocol implements this differently, and some not at all. The question is, how to implement this properly? It involves understanding how it works across all protocols and making sure that no events are screwed, as this can confuse the subgraph.
 - Should gasPrice or transactionFee be included?
@@ -58,3 +81,6 @@ Below is a general framework
 - What other information do data analysts want to see?
 - How much historical data should be included? For example, a user's historical balance for borrows and deposits of their whole portfolio. This, of course would take a ton of indexing, such as how the uniswap.info subgraph takes a long time to sync. 
 - Getting live data out of the subgraph is quite hard and complex - and this is particularly noticable in lending and borrowing protocols where you are earning interest or being charged interest. Subgraphs are not good at picking this up. The question is - how much of a detriment is this? Query time computation could provide a solution to this. 
+
+## Open Question around  Events derivedFrom
+- Can I just filter queries for events on entity types? Reducing the schema a lot?
