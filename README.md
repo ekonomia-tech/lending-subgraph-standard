@@ -1,8 +1,8 @@
 # Lending Protocol Subgraph Standard
 This repository contains a standard schema for lending protocols. 
 
-# Types of Lending Protocols
-The existing decentralized lending protocol all have slightly different twists to how lending works. A non-exhaustive list is provided below.
+## Types of Lending Protocols
+The existing decentralized lending protocol all have slightly different implementations of lending protocols. A non-exhaustive list is provided below.
 
 - Aave & Comp - Pooled. Global risk. Multi-asset. Borrow assets that are deposited
 - Maker & Abracadabra - Collateralized Debt Positions (CDPs). Isolated. Borrow a single synthetic asset minted, such as DAI or MIM.
@@ -10,63 +10,23 @@ The existing decentralized lending protocol all have slightly different twists t
 - RAI, Liquity - CDP, single asset as collateral, ETH. Borrow a single synthetic asset, RAI or LUSD.
 
 ## Generalizing a lending protocol
-Each protocol implements their functions, their events, their token minting and token transfers, differently. This means we have to make a very general schema to support all of these possibilities.
-
-Below is a general framework
-
-- `Deposit` - Deposit collateral into a protocol
-- `Withdraw` - Withdraw collateral from a protocol
-- `Borrow` - Borrow an asset from a protocol
-- `Repay` - Repay a borrowed asset from a protocol
-- `Liquidate` - Liquidate a user for profit
-- `FlashLoan implements Borrow` - A Flashloan is an under-collateralized single block `Borrow`
-
-# Other thoughts
-## Basic Transfers
-- If you transfer a cToken from one account to another, it needs to be withdrew from the original account, and then deposited into the new account. (Note - this makes for a complex scenario when a cToken or aToken has appreciated in value).
-## Minting and Supplying
-- Often you `Deposit` a collateral token, and you immediately mint a lending protocol token (i.e. supply USDC, get cUSDC in Compound)
-- When opening a CDP, you supply collateral, and you immediately mint a collateral backed asset like DAI.
-- HOWEVER - if your CDP contains ETH, and ETH went up in value, then you can mint more DAI without supplying anything
-- The point I am making here is that `Deposit` is often connected to the minting and/or `Borrow` of a token, but not always. So I have decided to keep them separate. They can be linked through `txHash`. But that does not tell the whole story, as someone could do multiple `Deposit`s and `Borrow`s in one transaction, as we often see with leverage.
-  
-## cTokens, aTokens, etc.
-- I deliberately exclude `cTokens` and `aTokens` from the schema, as they are representation of collateral, and not the collateral itself.
-- This has the downside of not being able to understand how the collateral is growing.
-- This will be included in Future Work.
-
-## How to record CDPs
-- We aggregate all the CDPs/Vaults that users create into one `Market`.
-## Seperate Pools under one protocol
-- Aave has two "Pools" on mainnet ethereum. One for normal ERC-20 assets, and another for AMM tokens. 
-- We split these into two protocols, as they are completely isolated in reality. 
-
-
-## Having a USD price and an ETH price
-- Should we include a price in eth for the debts and collaterals? I would say no, because if this is to be generalized, then it could be on a protocol like Polygon. Or some non-EVM chain. Thus, I am excluding it for now.
-- USD price is included because it is general, and so much lending in crypto revolves around stablecoins and leverage.
-
-## Calculating USD in the protocol is too messy, and even in Markets a bit messy
-- Protocol because it is a Many of Many aggregation, that depends on many USD conversion prices
-- Markets is one-to-many for some markets (DAI, RAI), and many-to-many (Aave, Compound)
-- not worth it, need to QUERY to aggregate
-
-## New mention about USD price
-- For lifetime, it is calculate at the moment, and stored
-- For current, it must be calculate as `price * asset` , where price is the asset value in USD
-- could mention how etherscan does it, and figure out if it relates to what we are doing.
-## You do not need AccoumtInProtocol and AccountInMarket to derive events
-- Its a derivation that relies on querying in postgres underneath. 
-- So we can also just filter on the top level of Account, to get what we want here.
-
-## Counts can be calculated by calculating the array of deposits withdraws, etc
-- So.... maybe I should remove them. They muddy up the subgraph
+Each protocol implements their own functions, events, token minting and token transfers. This means we have to make a very general schema to support all of these possibilities. Below is a general framework:
+- `Deposit` - Deposit collateral into a protocol.
+- `Withdraw` - Withdraw collateral from a protocol.
+- `Borrow` - Borrow an asset from a protocol.
+- `Repay` - Repay a borrowed asset from a protocol.
+- `Liquidate` - Liquidate a user for profit.
 
 ## Implmentatin order
-- Do the events first - straight forward. Check out the indexing speed 
+- Do the events first - straight forward. Check out the indexing speed
+  - counts, presumably could be improved by improving the graphql interface for subgraphs, therefore it is a good idea to build it out compartmentalized into a single .ts file  
 - Then do all the required stuff - real asset amounts held by accounts and protocols
 - Then USD cuz it will be complicated and it will be nice to have it first, rather than add it into lines of code after the lifetimes part
 - Then do lifetimes
+
+# Single subgraph or multiple?
+- The Indexing. Single or multiple subgraphs needed? We shall see. I can write a script that will change the manifests to deploy it as a single subgraph, or as multiple, 
+
 # Future Work
 - Incorporate borrow and supply rates
 - Incorporate representations of collateral and debt, such as `cTokens` and `aTokens`.
@@ -81,6 +41,9 @@ Below is a general framework
 - What other information do data analysts want to see?
 - How much historical data should be included? For example, a user's historical balance for borrows and deposits of their whole portfolio. This, of course would take a ton of indexing, such as how the uniswap.info subgraph takes a long time to sync. 
 - Getting live data out of the subgraph is quite hard and complex - and this is particularly noticable in lending and borrowing protocols where you are earning interest or being charged interest. Subgraphs are not good at picking this up. The question is - how much of a detriment is this? Query time computation could provide a solution to this. 
+- Is there any existing Subgraph standard out there? I think these could be defined better.
 
 ## Open Question around  Events derivedFrom
 - Can I just filter queries for events on entity types? Reducing the schema a lot?
+  - in some places yes, like Market and Protocol cuz the query is easy
+  - but in Account , it is harder because of `to` and `from` both being used

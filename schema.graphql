@@ -22,8 +22,8 @@ type Protocol @entity {
   riskType: RiskType!
   "All Markets within this Protocol"
   markets: [Markets!]! @derivedFrom(field: "protocol")
-  "All Accounts within this Protocol"
-  accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol") # Note - AccountInProtocol is used, as Account aggregates all Protocols
+  "All Accounts that have used this Protocol"
+  accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol")
   "Accumulated deposited amount in USD. Conversion into USD done at event time"
   lifetimeDepositedUSD: BigInt!
   "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
@@ -69,17 +69,17 @@ type Asset @entity {
 }
 
 """
-A single Market within a Protocol. A Market can be a single pool where all assets are pooled together. It can also be a combination of Collateralized Debt Positions (CDPs). The CDPs are aggregated together to represent a uniform Market.
+A single Market within a Protocol. A Market can be a single pool where all assets are pooled together. It can also be a combination of Collateralized Debt Positions (CDPs). The CDPs are aggregated together to represent a uniform Market. A Market can only contain 1 depositAsset and 1 borrowAsset.
 """
 type Market @entity {
   "Contract address"
-  id: ID! # TODO - Some markets might not have their own contract address. Confirm
+  id: ID!
   "Name of the Market"
-  name: String! # Should be derived from onchain data
+  name: String!
   "The Protocol the Market is a part of"
   protocol: Protocol!
   "All Accounts that have used this Market"
-  accounts: [AccountInMarket!]! @derivedFrom(field: "market") # Note - AccountInMarket is used, as Account aggregates all Markets
+  accounts: [AccountInMarket!]! @derivedFrom(field: "market")
   "Asset deposited in the market as collateral"
   depositAsset: Asset!
   "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
