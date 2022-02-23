@@ -1,11 +1,24 @@
 enum LendingType {
+  "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
   CDP
+  "Pooled protocols pool all users assets into a single market"
   Pooled
 }
 
 enum RiskType {
-  GlobalRisk
-  IsolatedRisk
+  "Global risk means each users position in a market is combined for one score to determine if they can be liquidated"
+  GLOBAL
+  "Isolated risk means each users position in a market or CDP is isolated for risk of liquidation"
+  ISOLATED
+}
+
+enum Network {
+  "The ethereum network"
+  ETHEREUM
+  "The polygon network"
+  POLYGON
+  "The avalanche network"
+  AVALANCHE
 }
 
 """
@@ -15,7 +28,7 @@ type Protocol @entity {
   "The Name of the Protocol"
   id: ID!
   "The Network the protocol exists on - Ethereum, Polygon, etc."
-  network: String!
+  network: Network!
   "Type of lending protocol"
   type: LendingType!
   "Type of risk"
