@@ -16,6 +16,14 @@ Each protocol implements their own functions, events, token minting and token tr
 - `Borrow` - Borrow an asset from a protocol.
 - `Repay` - Repay a borrowed asset from a protocol.
 - `Liquidate` - Liquidate a user for profit.
+
+## Config and Naming of Subgraphs
+- Each Subgraph is located in it's own folder within `/subgraphs`.
+- Each Subgraph must adopt the `schema.graphql` file as the schema. This file is essentially the standard, and thus it should be the only one used in this repository. However, forks of this repo can create new schemas in each Subgraph folder.
+- Each Subgraph is named by it's best known protocol and version.
+  - For a clear example, let's consider Uniswap. We would name the folder `uniswap-v2` and inside of it would be a config file for `sushiswap`, because `sushiswap` is a fork of Uniswap V2.
+- In the `config` folder of each Subgraph, it will contain all forks and networks that exist for a base set of Smart Contracts.
+- Each `config` folder will contain `json` files with the config. Then `mustache` can be used in combination with node scripts to deploy all networks and forks of a single Subgraph.
 ## Priority of implementing the Subgraph
 - Events and Counts first - as they are straight forward. Test the indexing speed here (and at the next steps).
 - Then do all the required stuff - real asset amounts held by accounts and protocols.
