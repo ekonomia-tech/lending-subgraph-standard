@@ -72,13 +72,17 @@ type Protocol @entity {
 }
 
 """
-An asset used in a lending protocol
+An asset used in a lending protocol. All assets should follow ERC-20 Standard
 """
 type Asset @entity {
   "Contract address"
   id: ID!
   "Token symbol"
   symbol: String!
+  "Name of asset"
+  name: String!
+  "Decimals of the asset"
+  decimals: Int!
 }
 
 """
@@ -94,9 +98,9 @@ type Market @entity {
   "All Accounts that have used this Market"
   accounts: [AccountInMarket!]! @derivedFrom(field: "market")
   "Asset deposited in the market as collateral"
-  depositAsset: Asset!
+  depositAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
   "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
-  borrowAsset: Asset!
+  borrowAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
   "Current deposited amount in depositAsset"
   deposited: BigDecimal!
   "Current borrowed amount in borrowAsset"
