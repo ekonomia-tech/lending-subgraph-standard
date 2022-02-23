@@ -8,7 +8,7 @@ yarn-error.log
 
 # Manifest
 ethereum.yaml
-compound.ethereum.yaml
-aave.ethereum.yaml
+compound-v2.ethereum.yaml
+aave-v2.ethereum.yaml
 polygon.yaml
 aave.polygon.yaml

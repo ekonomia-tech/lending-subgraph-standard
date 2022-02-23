@@ -34,7 +34,7 @@ type Protocol @entity {
   "Type of risk"
   riskType: RiskType!
   "All Markets within this Protocol"
-  markets: [Markets!]! @derivedFrom(field: "protocol")
+  markets: [Market!]! @derivedFrom(field: "protocol")
   "All Accounts that have used this Protocol"
   accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol")
   "Accumulated deposited amount in USD. Conversion into USD done at event time"
