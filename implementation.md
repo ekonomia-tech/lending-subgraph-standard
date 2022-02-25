@@ -1,4 +1,4 @@
-# Thoughts
+# Implementation Details
 After examining Compound and Aave Solidity code, I have some thoughts about how the mappings might need to handle the uniqueness of each protocol. 
 
 ## Basic Transfers
@@ -40,3 +40,24 @@ After examining Compound and Aave Solidity code, I have some thoughts about how 
 
 ## Counts of Events
 - One day `graph-node` will have better aggregation queries, but for now the best way to get a count of events is to implement counters, which I have done for `Protocol`, `Market`, `Account`.
+
+## Open Questions
+- Credit delegation can be implemented by separating the `sender` of transactions apart from the `from` or `to`, and also tracking the function calls that create delegation. But, every protocol implements this differently, and some not at all.
+  - The question is, how to implement this properly? It involves understanding how it works across all protocols and making sure that no events are screwed, as this can confuse the subgraph.
+- Should gasPrice or transactionFee be included?
+- How do Aave stable and variable debt tokens fit in here? Need to examine the code more.
+- Should each protocol extend each event, such as `CompoundDeposit`, `AaveBorrow`, etc? It seems it might be worth it, but might add a lot of indexing time.
+- How much historical data should be included? For example, a user's historical balance for borrows and deposits of their whole portfolio. This, of course would take a ton of indexing, such as how the uniswap.info subgraph takes a long time to sync. 
+- Is there any existing Subgraph standard out there?
+- Can we just filter queries for events like `Deposit` on entity types, and remove most usage of `@derivedFrom`?
+  - In some places yes, like Market and Protocol because the query is straight forward.
+  - But in Account , it is harder because of `to` and `from` both being used.
+  - For now, we are leaving them in.
+
+## Future Work
+- Incorporate borrow and supply rates.
+- Incorporate representations of collateral and debt, such as `cTokens` and `aTokens`. (Or decide to eliminate the idea completely).
+- There is a possibility we could included CDP specific data in the future. But it might stay abstracted away from the Subgraph. TBD.
+- Lifetime interest earned on Protocols and Markets
+- Writing a test suite that confirms the numbers add up for lifetime values, split up and down the Accounts, Markets and Users. (NOTE - Might be able to use [Matchstick](https://www.youtube.com/watch?v=cB7o2n-QrnU&list=PLTqyKgxaGF3SNakGQwczpSGVjS_xvOv3h&index=1)).
+  - It also makes me think, query time computation could calculate this. but it is always a battle of pre-compute vs. compute just-in-time.

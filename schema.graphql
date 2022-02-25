@@ -1,11 +1,24 @@
 enum LendingType {
+  "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
   CDP
+  "Pooled protocols pool all users assets into a single market"
   Pooled
 }
 
 enum RiskType {
-  GlobalRisk
-  IsolatedRisk
+  "Global risk means each users position in a market is combined for one score to determine if they can be liquidated"
+  GLOBAL
+  "Isolated risk means each users position in a market or CDP is isolated for risk of liquidation"
+  ISOLATED
+}
+
+enum Network {
+  "The ethereum network"
+  ETHEREUM
+  "The polygon network"
+  POLYGON
+  "The avalanche network"
+  AVALANCHE
 }
 
 """
@@ -15,13 +28,13 @@ type Protocol @entity {
   "The Name of the Protocol"
   id: ID!
   "The Network the protocol exists on - Ethereum, Polygon, etc."
-  network: String!
+  network: Network!
   "Type of lending protocol"
   type: LendingType!
   "Type of risk"
   riskType: RiskType!
   "All Markets within this Protocol"
-  markets: [Markets!]! @derivedFrom(field: "protocol")
+  markets: [Market!]! @derivedFrom(field: "protocol")
   "All Accounts that have used this Protocol"
   accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol")
   "Accumulated deposited amount in USD. Conversion into USD done at event time"
@@ -59,13 +72,17 @@ type Protocol @entity {
 }
 
 """
-An asset used in a lending protocol
+An asset used in a lending protocol. All assets should follow ERC-20 Standard
 """
 type Asset @entity {
   "Contract address"
   id: ID!
   "Token symbol"
   symbol: String!
+  "Name of asset"
+  name: String!
+  "Decimals of the asset"
+  decimals: Int!
 }
 
 """
@@ -81,9 +98,9 @@ type Market @entity {
   "All Accounts that have used this Market"
   accounts: [AccountInMarket!]! @derivedFrom(field: "market")
   "Asset deposited in the market as collateral"
-  depositAsset: Asset!
+  depositAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
   "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
-  borrowAsset: Asset!
+  borrowAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
   "Current deposited amount in depositAsset"
   deposited: BigDecimal!
   "Current borrowed amount in borrowAsset"

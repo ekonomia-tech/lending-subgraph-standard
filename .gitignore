@@ -1,0 +1,14 @@
+# Generated files
+build/
+generated/
+node_modules/
+src/types/
+.DS_STORE
+yarn-error.log
+
+# Manifest
+ethereum.yaml
+compound-v2.ethereum.yaml
+aave-v2.ethereum.yaml
+polygon.yaml
+aave.polygon.yaml
