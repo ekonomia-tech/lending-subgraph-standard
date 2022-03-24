@@ -1,11 +1,8 @@
 {
+    "extends": "@graphprotocol/graph-ts/types/tsconfig.base.json",
+    "include": ["src", "generated"],
     "compilerOptions": {
-        "types": [
-            "@graphprotocol/graph-ts",
-            "node"
-        ],
-        "target": "es5",
-        "resolveJsonModule": true,
-        "moduleResolution": "node"
-    }
-}
+        "types": ["@graphprotocol/graph-ts"]
+      }
+  }
+  

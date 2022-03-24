@@ -9,6 +9,7 @@ export function getOrCreateProtocol(protocolId: string): Protocol {
         protocol.priceOracle = null
         protocol.closeFactor = null
         protocol.maxAssets = null
+        protocol.save()
     }
     return protocol;
 }
@@ -16,4 +17,5 @@ export function getOrCreateProtocol(protocolId: string): Protocol {
 export function addMarketToProtocol(protocolId: string, marketId: string): void {
     let protocol = getOrCreateProtocol(protocolId)
     protocol.markets.push(marketId);
+    protocol.save()
 }

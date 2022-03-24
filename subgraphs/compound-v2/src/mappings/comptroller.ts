@@ -1,8 +1,7 @@
 import { MarketEntered, MarketListed, NewCollateralFactor, NewLiquidationIncentive, NewMaxAssets, NewPriceOracle } from "../../generated/Comptroller/Comptroller"
-import { Protocol } from "../../generated/schema"
 import { CToken } from "../../generated/templates"
-import { getOrCreateAccount } from "../helpers/account"
-import { mantissaFactorBD, unitrollerAddress } from "../helpers/generic"
+import { getOrCreateAccount, getOrCreateAccountInMarket, getOrCreateAccountInProtocol } from "../helpers/account"
+import { mantissaFactorBD  } from "../helpers/generic"
 import { getOrCreateMarket } from "../helpers/market"
 import { getOrCreateProtocol } from "../helpers/protocol"
 
@@ -19,23 +18,25 @@ export function handleMarketEntered(event: MarketEntered): void {
     let market = getOrCreateMarket(event.params.cToken.toHexString())
     let account = getOrCreateAccount(event.params.account.toHexString())
     let protocol = getOrCreateProtocol(market.protocol)
+    getOrCreateAccountInProtocol(protocol.id, account.id)
+    getOrCreateAccountInMarket(market.id, account.id)
 }
 
 export function handleNewPriceOracle(event: NewPriceOracle): void {
-    let protocol = getOrCreateProtocol(unitrollerAddress)
+    let protocol = getOrCreateProtocol(event.address.toHexString())
     // This is the first event used in this mapping, so we use it to create the entity
     protocol.priceOracle = event.params.newPriceOracle
     protocol.save()
 }
 
 export function handleNewMaxAssets(event: NewMaxAssets): void {
-    let protocol = Protocol.load(unitrollerAddress)
+    let protocol = getOrCreateProtocol(event.address.toHexString())
     protocol.maxAssets = event.params.newMaxAssets
     protocol.save()
 }
 
 export function handleNewLiquidationIncentive(event: NewLiquidationIncentive): void {
-    let protocol = Protocol.load(unitrollerAddress)
+    let protocol = getOrCreateProtocol(event.address.toHexString())
     protocol.liquidationIncentive = event.params.newLiquidationIncentiveMantissa
     protocol.save()
 }

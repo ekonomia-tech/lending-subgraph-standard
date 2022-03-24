@@ -2,7 +2,7 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "cEthAddress",
+    "name": "ETH_ADDRESS ",
     "outputs": [
       {
         "name": "",
@@ -58,7 +58,7 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "cDaiAddress",
+    "name": "cDAI_V1_ADDRESS ",
     "outputs": [
       {
         "name": "",
@@ -105,7 +105,7 @@
   {
     "constant": true,
     "inputs": [],
-    "name": "cUsdcAddress",
+    "name": "USD_ADDRESS ",
     "outputs": [
       {
         "name": "",
@@ -127,15 +127,15 @@
         "type": "address"
       },
       {
-        "name": "cEthAddress_",
+        "name": "ETH_ADDRESS _",
         "type": "address"
       },
       {
-        "name": "cUsdcAddress_",
+        "name": "USD_ADDRESS _",
         "type": "address"
       },
       {
-        "name": "cDaiAddress_",
+        "name": "cDAI_V1_ADDRESS _",
         "type": "address"
       }
     ],

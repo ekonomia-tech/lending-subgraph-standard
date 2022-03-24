@@ -1,13 +1,15 @@
+import { BigInt } from "@graphprotocol/graph-ts";
 import { Asset } from "../../generated/schema";
+import { zeroInt } from "./generic";
 
-export function getOrCreateAsset(assetId: string, symbol: string, name: string, decimals: number): Asset {
+export function getOrCreateAsset(assetId: string): Asset {
     let asset = Asset.load(assetId);
-    if (asset) {
-      return asset
+    if (!asset) {
+      asset = new Asset(assetId);
+      asset.symbol = ""
+      asset.name = ""
+      asset.decimals = 0
+      asset.save()
     }
-    asset = new Asset(assetId)
-    asset.symbol = symbol
-    asset.name = name
-    asset.decimals = decimals
     return asset;
   }
