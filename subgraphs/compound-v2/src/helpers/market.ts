@@ -20,8 +20,6 @@ export function getOrCreateMarket(marketAddress: string): Market {
     let assetDecimals: i32
 
 
-
-
     // It is CETH, which has a slightly different interface
     if (marketAddress == ETH_ADDRESS ) {
       market = new Market(marketAddress.toString())
