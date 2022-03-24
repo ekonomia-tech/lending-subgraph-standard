@@ -1,9 +1,9 @@
-import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigDecimal } from "@graphprotocol/graph-ts";
 import { ERC20 } from "../../generated/Comptroller/ERC20";
-import { Asset, Market } from "../../generated/schema";
+import { Market } from "../../generated/schema";
 import { CToken } from "../../generated/templates/CToken/CToken";
 import { getOrCreateAsset } from "./asset";
-import { ETH_ADDRESS , DAI_V1_ADDRESS , UNITROLLER_ADDRESS , zeroBD } from "./generic";
+import { CETH_ADDRESS , DAI_V1_ADDRESS , UNITROLLER_ADDRESS , zeroBD } from "./generic";
 import { addMarketToProtocol, getOrCreateProtocol } from "./protocol";
 
 export function getOrCreateMarket(marketAddress: string): Market {
@@ -21,7 +21,7 @@ export function getOrCreateMarket(marketAddress: string): Market {
 
 
     // It is CETH, which has a slightly different interface
-    if (marketAddress == ETH_ADDRESS ) {
+    if (marketAddress == CETH_ADDRESS ) {
       market = new Market(marketAddress.toString())
       assetAddress = Address.fromString(
         '0x0000000000000000000000000000000000000000',
@@ -64,8 +64,9 @@ export function getOrCreateMarket(marketAddress: string): Market {
     market.protocol = protocol.id
     market.asset = asset.id
     market.collateralBackedAsset = null
-    
+    market.save()
     addMarketToProtocol(protocol.id, market.id)
+    
     return market
 }
 

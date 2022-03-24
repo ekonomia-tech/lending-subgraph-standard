@@ -2,7 +2,7 @@ enum LendingType {
   "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
   CDP
   "Pooled protocols pool all users assets into a single market"
-  Pooled
+  POOLED
 }
 
 enum RiskType {
@@ -98,9 +98,9 @@ type Account @entity {
   "True if user has ever borrowed"
   hasBorrowed: Boolean!
   "Number of times the account has gotten liquidated"
-  liquidatedCount: BigInt!
+  liquidatedCount: Int!
   "Number of times the account liquidated others"
-  liquidatingCount: BigInt!
+  liquidatingCount: Int!
 }
 
 """

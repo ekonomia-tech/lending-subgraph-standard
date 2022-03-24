@@ -1,4 +1,4 @@
-import { MarketEntered, MarketListed, NewCollateralFactor, NewLiquidationIncentive, NewMaxAssets, NewPriceOracle } from "../../generated/Comptroller/Comptroller"
+import { MarketEntered, MarketListed, NewCloseFactor, NewCollateralFactor, NewLiquidationIncentive, NewMaxAssets, NewPriceOracle } from "../../generated/Comptroller/Comptroller"
 import { CToken } from "../../generated/templates"
 import { getOrCreateAccount, getOrCreateAccountInMarket, getOrCreateAccountInProtocol } from "../helpers/account"
 import { mantissaFactorBD  } from "../helpers/generic"
@@ -10,7 +10,6 @@ export function handleMarketListed(event: MarketListed): void {
     CToken.create(event.params.cToken)
     // Create the market for this token, since it's now been listed.
     let market = getOrCreateMarket(event.params.cToken.toHexString())
-    market.save()
 }
 
 
@@ -49,3 +48,9 @@ export function handleNewCollateralFactor(event: NewCollateralFactor): void {
     market.save()
 
 }
+
+export function handleNewCloseFactor(event: NewCloseFactor): void {
+    let protocol = getOrCreateProtocol(event.address.toHexString()) 
+    protocol.closeFactor = event.params.newCloseFactorMantissa
+    protocol.save()
+  }

@@ -7,8 +7,8 @@ export function getOrCreateAccount(accountId: string): Account {
     if (!account) {
       account = new Account(accountId)
       account.hasBorrowed = false
-      account.liquidatedCount = zeroInt
-      account.liquidatingCount = zeroInt
+      account.liquidatedCount = 0
+      account.liquidatingCount = 0
       account.save()
     }
     return account;
@@ -24,9 +24,9 @@ export function AddToLiquidationCount(accountId: string, isLiquidated: boolean):
   // Adds a count if account is liduidated or liquidating
   let account = getOrCreateAccount(accountId)
   if (isLiquidated) {
-    account.liquidatedCount.plus(new BigInt(1))
+    account.liquidatedCount += 1
   } else {
-    account.liquidatingCount.plus(new BigInt(1))
+    account.liquidatingCount += 1
   }
   account.save()
 }
