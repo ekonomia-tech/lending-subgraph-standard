@@ -1,6 +1,9 @@
 import { Borrow, LiquidateBorrow, Mint, Redeem, RepayBorrow, Transfer } from "../../generated/Comptroller/CToken";
 import { Event } from "../../generated/schema";
-import { AddToLiquidationCount, cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal, generateId, getOrCreateAccount, getOrCreateMarket, getOrCreateProtocol, markAccountAsBorrowed } from "../helpers";
+import { AddToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed } from "../helpers/account";
+import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal, generateId } from "../helpers/generic";
+import { getOrCreateMarket, updateMarketStats } from "../helpers/market";
+import { getOrCreateProtocol } from "../helpers/protocol";
 
 export function handleMint(event: Mint): void {
     let market = getOrCreateMarket(event.address.toHexString())
@@ -17,16 +20,18 @@ export function handleMint(event: Mint): void {
         .toBigDecimal()
         .div(exponentToBigDecimal(market.underlyingDecimals))
         .truncate(market.underlyingDecimals)
-
+    
     let mintEvent = new Event(mintId)
-    mintEvent.eventType = "MINT"
+    mintEvent.eventType = "DEPOSIT"
     mintEvent.market = market.id
     mintEvent.protocol = protocol.id
     mintEvent.account = account.id
-    mintEvent.amount = cTokenAmount
-    mintEvent.underlyingAmount = underlyingAmount
+    mintEvent.amount = underlyingAmount
+    mintEvent.xTokenAmount = cTokenAmount
     mintEvent.blockTime = event.block.timestamp.toI32()
     mintEvent.save()
+
+    updateMarketStats(market.id, mintEvent.eventType, underlyingAmount)
 }   
 
 
@@ -51,11 +56,13 @@ export function handleRedeem(event: Redeem): void {
     redeemEvent.market = market.id
     redeemEvent.protocol = protocol.id
     redeemEvent.account = account.id
-    redeemEvent.amount = cTokenAmount
-    redeemEvent.underlyingAmount = underlyingAmount
+    redeemEvent.amount = underlyingAmount
+    redeemEvent.xTokenAmount = cTokenAmount
     redeemEvent.blockTime = event.block.timestamp.toI32()
 
     redeemEvent.save()
+
+    updateMarketStats(market.id, redeemEvent.eventType, underlyingAmount)
 }
 
 export function handleBorrow(event: Borrow): void {
@@ -81,6 +88,8 @@ export function handleBorrow(event: Borrow): void {
     borrowEvent.blockTime = event.block.timestamp.toI32()
 
     borrowEvent.save()
+
+    updateMarketStats(market.id, borrowEvent.eventType, borrowAmount)
 }
 
 
@@ -107,6 +116,8 @@ export function handleRepay(event: RepayBorrow): void {
     repayEvent.blockTime = event.block.timestamp.toI32()
 
     repayEvent.save()
+
+    updateMarketStats(market.id, repayEvent.eventType, repayAmount)
 }
 
 
@@ -135,12 +146,14 @@ export function handleLiquidate(event: LiquidateBorrow): void {
     liquidationEvent.market = market.id
     liquidationEvent.protocol = protocol.id
     liquidationEvent.account = account.id
-    liquidationEvent.amount = cTokenAmount
+    liquidationEvent.amount = underlyingRepayAmount
     liquidationEvent.liquidator = liquidator.id
-    liquidationEvent.underlyingAmount = underlyingRepayAmount
+    liquidationEvent.xTokenAmount = cTokenAmount
     liquidationEvent.blockTime = event.block.timestamp.toI32()
 
     liquidationEvent.save()
+
+    updateMarketStats(market.id, liquidationEvent.eventType, underlyingRepayAmount)
 }
 
 
@@ -169,8 +182,8 @@ export function handleTransfer(event: Transfer): void {
     transferEvent.protocol = protocol.id
     transferEvent.account = account.id
     transferEvent.to = to.id
-    transferEvent.amount = transferAmount
-    transferEvent.underlyingAmount = amountUnderlying
+    transferEvent.amount = amountUnderlyingTruncated
+    transferEvent.xTokenAmount = transferAmount
     transferEvent.blockTime = event.block.timestamp.toI32()
 
     transferEvent.save()

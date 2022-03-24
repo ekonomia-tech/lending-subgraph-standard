@@ -1,8 +1,10 @@
-import { MarketListed, NewCollateralFactor, NewLiquidationIncentive, NewMaxAssets, NewPriceOracle } from "../../generated/Comptroller/Comptroller"
+import { MarketEntered, MarketListed, NewCollateralFactor, NewLiquidationIncentive, NewMaxAssets, NewPriceOracle } from "../../generated/Comptroller/Comptroller"
 import { Protocol } from "../../generated/schema"
 import { CToken } from "../../generated/templates"
-import { getOrCreateMarket, getOrCreateProtocol, mantissaFactorBD, unitrollerAddress } from "../helpers"
-
+import { getOrCreateAccount } from "../helpers/account"
+import { mantissaFactorBD, unitrollerAddress } from "../helpers/generic"
+import { getOrCreateMarket } from "../helpers/market"
+import { getOrCreateProtocol } from "../helpers/protocol"
 
 export function handleMarketListed(event: MarketListed): void {
     // Dynamically index all new listed tokens
@@ -10,6 +12,13 @@ export function handleMarketListed(event: MarketListed): void {
     // Create the market for this token, since it's now been listed.
     let market = getOrCreateMarket(event.params.cToken.toHexString())
     market.save()
+}
+
+
+export function handleMarketEntered(event: MarketEntered): void {
+    let market = getOrCreateMarket(event.params.cToken.toHexString())
+    let account = getOrCreateAccount(event.params.account.toHexString())
+    let protocol = getOrCreateProtocol(market.protocol)
 }
 
 export function handleNewPriceOracle(event: NewPriceOracle): void {

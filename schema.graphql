@@ -39,6 +39,10 @@ type Protocol @entity {
   liquidationIncentive: BigInt
   "Max assets a single user can enter"
   maxAssets: BigInt
+  "All Markets within this Protocol"
+  markets: [Market!]! @derivedFrom(field: "protocol")
+  "All events that happened in the protocol"
+  events: [Event!]! @derivedFrom(field: "protocol")
 }
 
 """
@@ -119,12 +123,12 @@ type Event @entity {
   to: Account
   "Event type: Deposit Withdraw Borrow Repay Liquidate"
   eventType: String!
-  "Amount of Tokens transferred"
+  "Amount of Tokens transferred - Underlying"
   amount: BigDecimal!
   "Block timestamp"
   blockTime: Int!
-  "Amount of Tokens transferred - Related to - Mint and Withdraw event"
-  underlyingAmount: BigDecimal
+  "Amount of Tokens transferred - used only in specific cases"
+  xTokenAmount: BigDecimal
   "Liquidator that paid the debt: Relevant only for Liquidation event"
   liquidator: Account
   "Account of the payer - Related to Repay event"
