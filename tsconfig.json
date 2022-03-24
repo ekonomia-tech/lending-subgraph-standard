@@ -4,6 +4,7 @@
             "@graphprotocol/graph-ts",
             "node"
         ],
+        "target": "es5",
         "resolveJsonModule": true,
         "moduleResolution": "node"
     }

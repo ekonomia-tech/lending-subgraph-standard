@@ -1,0 +1,451 @@
+enum LendingType {
+  "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
+  CDP
+  "Pooled protocols pool all users assets into a single market"
+  Pooled
+}
+
+enum RiskType {
+  "Global risk means each users position in a market is combined for one score to determine if they can be liquidated"
+  GLOBAL
+  "Isolated risk means each users position in a market or CDP is isolated for risk of liquidation"
+  ISOLATED
+}
+
+enum Network {
+  "The ethereum network"
+  ETHEREUM
+  "The polygon network"
+  POLYGON
+  "The avalanche network"
+  AVALANCHE
+}
+
+"""
+Protocol represents all aggregated information of a single protocol on a single network.
+"""
+type Protocol @entity {
+  "The Name of the Protocol"
+  id: ID!
+  "The Network the protocol exists on - Ethereum, Polygon, etc."
+  network: Network!
+  "Type of lending protocol"
+  type: LendingType!
+  "Type of risk"
+  riskType: RiskType!
+  "All Markets within this Protocol"
+  markets: [Market!]! @derivedFrom(field: "protocol")
+  "All Accounts that have used this Protocol"
+  accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol")
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal!
+
+  "The number of time Deposits have occurred"
+  depositCount: BigInt!
+  "The number of time Withdraws have occurred"
+  withdrawCount: BigInt!
+  "The number of time Borrows have occurred"
+  borrowCount: BigInt!
+  "The number of time Repays have occurred"
+  repayCount: BigInt!
+  "The number of time Liquidations have occurred"
+  liquidatedCount: BigInt!
+
+  "All Deposit events"
+  deposits: [Deposit!]! @derivedFrom(field: "protocol")
+  "All Withdraw events"
+  withdraws: [Withdraw!]! @derivedFrom(field: "protocol")
+  "All Borrow events"
+  borrows: [Borrow!]! @derivedFrom(field: "protocol")
+  "All Repay events"
+  repays: [Repay!]! @derivedFrom(field: "protocol")
+  "All Liquidation events"
+  liquidations: [Liquidate!]! @derivedFrom(field: "protocol")
+}
+
+"""
+An asset used in a lending protocol. All assets should follow ERC-20 Standard
+"""
+type Asset @entity {
+  "Contract address"
+  id: ID!
+  "Token symbol"
+  symbol: String!
+  "Name of asset"
+  name: String!
+  "Decimals of the asset"
+  decimals: Int!
+}
+
+"""
+A single Market within a Protocol. A Market can be a single pool where all assets are pooled together. It can also be a combination of Collateralized Debt Positions (CDPs). The CDPs are aggregated together to represent a uniform Market. A Market can only contain 1 depositAsset and 1 borrowAsset.
+"""
+type Market @entity {
+  "Contract address"
+  id: ID!
+  "Name of the Market"
+  name: String!
+  "The Protocol the Market is a part of"
+  protocol: Protocol!
+  "All Accounts that have used this Market"
+  accounts: [AccountInMarket!]! @derivedFrom(field: "market")
+  "Asset deposited in the market as collateral"
+  depositAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
+  "Asset borrowed. CDP style is native asset - i.e. DAI. Aave style borrowed asset == deposit Asset"
+  borrowAsset: Asset! # NOTE - this could be an array, but we should find a protocol that needs this first, before implementing like so
+  "Current deposited amount in depositAsset"
+  deposited: BigDecimal!
+  "Current borrowed amount in borrowAsset"
+  borrowed: BigDecimal!
+  "The current price of the depositAsset in USD"
+  depositPriceUSD: BigDecimal
+  "The current price of the borrowAsset in USD"
+  borrowPriceUSD: BigDecimal
+
+  "Accumulated deposited amount in depositAsset"
+  lifetimeDeposited: BigInt!
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt!
+  "Accumulated withdrawn amount in depositAsset"
+  lifetimeWithdrawn: BigInt!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt!
+  "Accumulated borrowed amount in borrowAsset"
+  lifetimeBorrowed: BigInt!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in borrowAsset"
+  lifetimeRepaid: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal!
+  "Accumulated liquidated amount in depositAsset"
+  lifetimeLiquidated: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal!
+
+  "The number of times Deposits have occurred"
+  depositCount: BigInt!
+  "The number of times Withdraws have occurred"
+  withdrawCount: BigInt!
+  "The number of times Borrows have occurred"
+  borrowCount: BigInt!
+  "The number of times Repays have occurred"
+  repayCount: BigInt!
+  "The number of times Liquidations have occurred"
+  liquidatedCount: BigInt!
+
+  "All Deposit events"
+  deposits: [Deposit!]! @derivedFrom(field: "market")
+  "All Withdraw events"
+  withdraws: [Withdraw!]! @derivedFrom(field: "market")
+  "All Borrow events"
+  borrows: [Borrow!]! @derivedFrom(field: "market")
+  "All Repay events"
+  repays: [Repay!]! @derivedFrom(field: "market")
+  "All Liquidation events"
+  liquidations: [Liquidate!]! @derivedFrom(field: "market")
+}
+
+"""
+An account that has interacted with at least 1 lending protocol tracked in the Subgraph
+"""
+type Account @entity {
+  "Contract address"
+  id: ID!
+  "All Protocols this account is in"
+  protocols: [AccountInProtocol!]! @derivedFrom(field: "account")
+  "All Markets this Account is in"
+  markets: [AccountInMarket!]! @derivedFrom(field: "account")
+
+  "Accumulated deposited amount in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt!
+  "Accumulated withdrawn amount in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt!
+  "Accumulated borrowed amount in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal!
+  "Accumulated liquidated amount in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal!
+  "Accumulated interest earned on lending in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeInterestEarnedUSD: BigDecimal!
+  "Accumulated interest paid on borrowing in USD in all Protocols. Conversion into USD done at event time"
+  lifetimeInterestPaidUSD: BigDecimal!
+
+  "The number of times the Account has deposited into any market"
+  depositCount: BigInt!
+  "The number of times the Account has withdrawn into any market"
+  withdrawCount: BigInt!
+  "The number of times the Account has borrowed into any market"
+  borrowCount: BigInt!
+  "The number of times the Account has repaid into any market"
+  repayCount: BigInt!
+  "The number of times the Account has been liquidated in any market"
+  liquidatedCount: BigInt!
+
+  "All Deposit events"
+  deposits: [Deposit!]! @derivedFrom(field: "from")
+  "All Withdraw events"
+  withdraws: [Withdraw!]! @derivedFrom(field: "to")
+  "All Borrow events"
+  borrows: [Borrow!]! @derivedFrom(field: "to")
+  "All Repay events"
+  repays: [Repay!]! @derivedFrom(field: "from")
+  "All Liquidation events"
+  liquidations: [Liquidate!]! @derivedFrom(field: "from")
+}
+
+"""
+History of an Account within a single Protocol
+"""
+type AccountInProtocol @entity {
+  "Account ID concatenated with Protocol ID"
+  id: ID!
+  "Protocol the Account is active in"
+  protocol: Protocol!
+  "Account which has participated in the Protocol"
+  account: Account!
+
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal!
+
+  "The number of time Deposits have occurred in all Protocols by this Account"
+  depositCount: BigInt!
+  "The number of time Withdraws have occurred in all Protocols by this Account"
+  withdrawCount: BigInt!
+  "The number of time Borrows have occurred in all Protocols by this Account"
+  borrowCount: BigInt!
+  "The number of time Repays have occurred in all Protocols by this Account"
+  repayCount: BigInt!
+  "The number of time Liquidations have occurred in all Protocols by this Account"
+  liquidatedCount: BigInt!
+}
+
+"""
+Actions and history of an Account within a single Market
+"""
+type AccountInMarket @entity {
+  "Account ID concatenated with Market ID"
+  id: ID!
+  "Market the account is involved with"
+  market: Market!
+  "Account involved in this market"
+  account: Account!
+
+  "Current deposit amount in depositAsset"
+  deposited: BigDecimal!
+  "Current borrow amount in borrowAsset"
+  borrowed: BigDecimal!
+
+  "Accumulated deposited amount in depositAsset"
+  lifetimeDeposited: BigInt!
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt!
+  "Accumulated withdrawn amount in depositAsset"
+  lifetimeWithdrawn: BigInt!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt!
+  "Accumulated borrowed amount in borrowAsset"
+  lifetimeBorrowed: BigInt!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in borrowAsset"
+  lifetimeRepaid: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal!
+  "Accumulated liquidated amount in depositAsset"
+  lifetimeLiquidated: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal!
+
+  "The number of times Deposits have occurred in this Market by this Account"
+  depositCount: BigInt!
+  "The number of times Withdraws have occurred in this Market by this Account"
+  withdrawCount: BigInt!
+  "The number of times Borrows have occurred in this Market by this Account"
+  borrowCount: BigInt!
+  "The number of times Repays have occurred in this Market by this Account"
+  repayCount: BigInt!
+  "The number of times Liquidations have occurred in this Market by this Account"
+  liquidatedCount: BigInt!
+}
+
+"""
+An event is a general action that occurs in a Lending Protocol
+"""
+interface Event {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset transferred"
+  asset: Asset!
+  "Amount of Tokens transferred"
+  amount: BigDecimal!
+  "Amount transferred in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Account that received tokens"
+  to: Account!
+  "Account that sent tokens"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The Market within a Protocol the event originated from"
+  market: Market!
+}
+
+"""
+Deposit collateral
+"""
+type Deposit implements Event @entity {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset deposited"
+  asset: Asset!
+  "Amount of tokens deposited into the Protocol"
+  amount: BigDecimal!
+  "Amount deposited in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Protocol contract that received tokens"
+  to: Account!
+  "Account that deposited tokens"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The Market within a Protocol that the event originated from"
+  market: Market!
+}
+
+"""
+Withdraw collateral
+"""
+type Withdraw implements Event @entity {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset withdrawn"
+  asset: Asset!
+  "Amount of tokens being withdrawn from the Protocol"
+  amount: BigDecimal!
+  "Amount withdrawn in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Account that withdrew tokens"
+  to: Account!
+  "Protocol contract that sent tokens"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The Market within a Protocol the event originated from"
+  market: Market!
+}
+
+"""
+Borrow an asset
+"""
+type Borrow implements Event @entity {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset borrowed"
+  asset: Asset!
+  "Amount of tokens borrowed from the Protocol"
+  amount: BigDecimal!
+  "Amount borrowed in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Account that borrowed tokens"
+  to: Account!
+  "Protocol contract that sent borrowed tokens"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The Market within a Protocol the event originated from"
+  market: Market!
+}
+
+"""
+Repay a borrowed asset
+"""
+type Repay implements Event @entity {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset repaid"
+  asset: Asset!
+  "Amount of tokens repaid to the Protocol"
+  amount: BigDecimal!
+  "Amount repaid in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Protocol contract that received repayment"
+  to: Account!
+  "Account that owed the asset"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The Market within a Protocol the event originated from"
+  market: Market!
+  "Payer of the debt. Payer is not always the same as borrower. i.e. a liquidation"
+  payer: Account!
+}
+
+"""
+Liquidate an Account that went below the safe borrowing threshold
+"""
+type Liquidate implements Event @entity {
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "Asset repaid"
+  asset: Asset!
+  "Amount of tokens repaid to the Protocol"
+  amount: BigDecimal!
+  "Amount repaid in USD. Conversion into USD done at event time"
+  amountUSD: BigDecimal
+  "Protocol contract that received repayment"
+  to: Account!
+  "Account that owed the asset and is being liquidated"
+  from: Account!
+  "Block number"
+  blockNumber: Int!
+  "Block timestamp"
+  blockTime: Int!
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "The market within a Protocol the event originated from"
+  market: Market!
+  "Liquidator that paid the debt"
+  liquidator: Account!
+  "Amount of collateral asset received by the Liquidator"
+  received: BigDecimal!
+  "Profit of the liquidator based on the Protocol liquidation fee"
+  profit: BigDecimal!
+}
