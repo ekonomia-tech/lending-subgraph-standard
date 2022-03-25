@@ -1,15 +1,20 @@
-import { Borrow, LiquidateBorrow, Mint, Redeem, RepayBorrow, Transfer } from "../../generated/Comptroller/CToken";
+import { AccrueInterest, Borrow, LiquidateBorrow, Mint, NewMarketInterestRateModel, NewReserveFactor, Redeem, RepayBorrow, Transfer } from "../../generated/Comptroller/CToken";
 import { Event } from "../../generated/schema";
-import { AddToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed } from "../helpers/account";
-import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal, generateId } from "../helpers/generic";
+import { addToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed, updateAccountStats } from "../helpers/account";
+import { getOrCreateAsset } from "../helpers/asset";
+import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal } from "../helpers/generic";
 import { getOrCreateMarket, updateMarketStats } from "../helpers/market";
 import { getOrCreateProtocol } from "../helpers/protocol";
 
 export function handleMint(event: Mint): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.minter.toHexString())
-    let mintId = generateId(event)
+    let mintId = event.transaction.hash
+    .toHexString()
+    .concat('-')
+    .concat(event.transactionLogIndex.toString())
 
     let cTokenAmount = event.params.mintTokens
         .toBigDecimal()
@@ -18,28 +23,33 @@ export function handleMint(event: Mint): void {
 
     let underlyingAmount = event.params.mintAmount
         .toBigDecimal()
-        .div(exponentToBigDecimal(market.underlyingDecimals))
-        .truncate(market.underlyingDecimals)
+        .div(exponentToBigDecimal(asset.decimals))
+        .truncate(asset.decimals)
     
-    let mintEvent = new Event(mintId)
-    mintEvent.eventType = "DEPOSIT"
-    mintEvent.market = market.id
-    mintEvent.protocol = protocol.id
-    mintEvent.account = account.id
-    mintEvent.amount = underlyingAmount
-    mintEvent.xTokenAmount = cTokenAmount
-    mintEvent.blockTime = event.block.timestamp.toI32()
-    mintEvent.save()
+    let eventEntry = new Event(mintId)
+    eventEntry.eventType = "DEPOSIT"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.xTokenAmount = cTokenAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.save()
 
-    updateMarketStats(market.id, mintEvent.eventType, underlyingAmount)
+    updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
+    updateAccountStats(protocol.id, market.id, account.id, underlyingAmount, eventEntry.eventType)
 }   
 
 
 export function handleRedeem(event: Redeem): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.redeemer.toHexString())
-    let redeemId = generateId(event)
+    let redeemId = event.transaction.hash
+    .toHexString()
+    .concat('-')
+    .concat(event.transactionLogIndex.toString())
     
     let cTokenAmount = event.params.redeemTokens
         .toBigDecimal()
@@ -48,143 +58,167 @@ export function handleRedeem(event: Redeem): void {
 
     let underlyingAmount = event.params.redeemAmount
         .toBigDecimal()
-        .div(exponentToBigDecimal(market.underlyingDecimals))
-        .truncate(market.underlyingDecimals)
+        .div(exponentToBigDecimal(asset.decimals))
+        .truncate(asset.decimals)
 
-    let redeemEvent = new Event(redeemId)
-    redeemEvent.eventType = "WITHDRAW"
-    redeemEvent.market = market.id
-    redeemEvent.protocol = protocol.id
-    redeemEvent.account = account.id
-    redeemEvent.amount = underlyingAmount
-    redeemEvent.xTokenAmount = cTokenAmount
-    redeemEvent.blockTime = event.block.timestamp.toI32()
+    let eventEntry = new Event(redeemId)
+    eventEntry.eventType = "WITHDRAW"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.xTokenAmount = cTokenAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
 
-    redeemEvent.save()
+    eventEntry.save()
 
-    updateMarketStats(market.id, redeemEvent.eventType, underlyingAmount)
+    updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
+    updateAccountStats(protocol.id, market.id, account.id, underlyingAmount, eventEntry.eventType)
 }
 
 export function handleBorrow(event: Borrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
-    let borrowId = generateId(event)
+    let borrowId = event.transaction.hash
+    .toHexString()
+    .concat('-')
+    .concat(event.transactionLogIndex.toString())
 
     markAccountAsBorrowed(account.id)
 
-    let borrowAmount = event.params.borrowAmount
+    let underlyingAmount = event.params.borrowAmount
     .toBigDecimal()
-    .div(exponentToBigDecimal(market.underlyingDecimals))
-    .truncate(market.underlyingDecimals)
+    .div(exponentToBigDecimal(asset.decimals))
+    .truncate(asset.decimals)
 
-    let borrowEvent = new Event(borrowId)
-    borrowEvent.protocol = protocol.id
-    borrowEvent.eventType = "BORROW"
-    borrowEvent.market = market.id
-    borrowEvent.protocol = protocol.id
-    borrowEvent.account = account.id
-    borrowEvent.amount = borrowAmount
-    borrowEvent.blockTime = event.block.timestamp.toI32()
+    let eventEntry = new Event(borrowId)
+    eventEntry.protocol = protocol.id
+    eventEntry.eventType = "BORROW"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
 
-    borrowEvent.save()
+    eventEntry.save()
 
-    updateMarketStats(market.id, borrowEvent.eventType, borrowAmount)
+    updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
+    updateAccountStats(protocol.id, market.id, account.id, underlyingAmount, eventEntry.eventType)
 }
 
 
-export function handleRepay(event: RepayBorrow): void {
+export function handleRepayBorrow(event: RepayBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
     let repayer = getOrCreateAccount(event.params.payer.toHexString())
-    let repayId = generateId(event)
+    let repayId = event.transaction.hash
+        .toHexString()
+        .concat('-')
+        .concat(event.transactionLogIndex.toString())
 
-    let repayAmount = event.params.repayAmount
+    let underlyingAmount = event.params.repayAmount
         .toBigDecimal()
-        .div(exponentToBigDecimal(market.underlyingDecimals))
-        .truncate(market.underlyingDecimals)
+        .div(exponentToBigDecimal(asset.decimals))
+        .truncate(asset.decimals)
 
-    let repayEvent = new Event(repayId)
-    repayEvent.protocol = protocol.id
-    repayEvent.eventType = "REPAY"
-    repayEvent.market = market.id
-    repayEvent.protocol = protocol.id
-    repayEvent.account = account.id
-    repayEvent.payer = repayer.id
-    repayEvent.amount = repayAmount
-    repayEvent.blockTime = event.block.timestamp.toI32()
+    let eventEntry = new Event(repayId)
+    eventEntry.protocol = protocol.id
+    eventEntry.eventType = "REPAY"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.payer = repayer.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
 
-    repayEvent.save()
+    eventEntry.save()
 
-    updateMarketStats(market.id, repayEvent.eventType, repayAmount)
+    updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
+    updateAccountStats(protocol.id, market.id, account.id, underlyingAmount, eventEntry.eventType)
 }
 
 
-export function handleLiquidate(event: LiquidateBorrow): void {
+export function handleLiquidateBorrow(event: LiquidateBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
     let liquidator = getOrCreateAccount(event.params.liquidator.toHexString())
-    let liquidationId = generateId(event)
+    let liquidationId = event.transaction.hash
+        .toHexString()
+        .concat('-')
+        .concat(event.transactionLogIndex.toString())
 
-    AddToLiquidationCount(account.id, true)
-    AddToLiquidationCount(liquidator.id, false)
+    addToLiquidationCount(account.id, true)
+    addToLiquidationCount(liquidator.id, false)
 
     let cTokenAmount = event.params.seizeTokens
         .toBigDecimal()
         .div(cTokenDecimalsBD)
         .truncate(cTokenDecimals)
-    let underlyingRepayAmount = event.params.repayAmount
+    let underlyingAmount = event.params.repayAmount
         .toBigDecimal()
-        .div(exponentToBigDecimal(market.underlyingDecimals))
-        .truncate(market.underlyingDecimals)
+        .div(exponentToBigDecimal(asset.decimals))
+        .truncate(asset.decimals)
 
-    let liquidationEvent = new Event(liquidationId)
-    liquidationEvent.protocol = protocol.id
-    liquidationEvent.eventType = "LIQUIDATION"
-    liquidationEvent.market = market.id
-    liquidationEvent.protocol = protocol.id
-    liquidationEvent.account = account.id
-    liquidationEvent.amount = underlyingRepayAmount
-    liquidationEvent.liquidator = liquidator.id
-    liquidationEvent.xTokenAmount = cTokenAmount
-    liquidationEvent.blockTime = event.block.timestamp.toI32()
+    let eventEntry = new Event(liquidationId)
+    eventEntry.protocol = protocol.id
+    eventEntry.eventType = "LIQUIDATION"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.liquidator = liquidator.id
+    eventEntry.xTokenAmount = cTokenAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
 
-    liquidationEvent.save()
+    eventEntry.save()
 
-    updateMarketStats(market.id, liquidationEvent.eventType, underlyingRepayAmount)
+    updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
+    updateAccountStats(protocol.id, market.id, account.id, underlyingAmount, eventEntry.eventType)
 }
 
 
 export function handleTransfer(event: Transfer): void {
     let market = getOrCreateMarket(event.address.toHexString())
+    let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.from.toHexString())
     let to = getOrCreateAccount(event.params.to.toHexString())
-    let transferId = generateId(event)
-    let amountUnderlying = market.exchangeRate.times(
-        event.params.amount
-            .toBigDecimal()
-            .div(cTokenDecimalsBD)
-    )
-
+    let transferId = event.transaction.hash
+        .toHexString()
+        .concat('-')
+        .concat(event.transactionLogIndex.toString())
+    
     let transferAmount = event.params.amount
         .toBigDecimal()
         .div(cTokenDecimalsBD)
     
-    let amountUnderlyingTruncated = amountUnderlying.truncate(market.underlyingDecimals)
-    
-    let transferEvent = new Event(transferId)
-    transferEvent.protocol = protocol.id
-    transferEvent.eventType = "TRANSFER"
-    transferEvent.market = market.id
-    transferEvent.protocol = protocol.id
-    transferEvent.account = account.id
-    transferEvent.to = to.id
-    transferEvent.amount = amountUnderlyingTruncated
-    transferEvent.xTokenAmount = transferAmount
-    transferEvent.blockTime = event.block.timestamp.toI32()
+    let underlyingAmount = market.exchangeRate
+    .times(transferAmount
+        .truncate(asset.decimals)
+    )
 
-    transferEvent.save()
+    let eventEntry = new Event(transferId)
+    eventEntry.protocol = protocol.id
+    eventEntry.eventType = "TRANSFER"
+    eventEntry.market = market.id
+    eventEntry.protocol = protocol.id
+    eventEntry.account = account.id
+    eventEntry.to = to.id
+    eventEntry.amount = underlyingAmount
+    eventEntry.xTokenAmount = transferAmount
+    eventEntry.blockTime = event.block.timestamp.toI32()
+
+    eventEntry.save()
 }
+
+export function handleAccrueInterest(event: AccrueInterest): void {}
+
+export function handleNewReserveFactor(event: NewReserveFactor): void {}
+
+export function handleNewMarketInterestRateModel(event: NewMarketInterestRateModel): void {}

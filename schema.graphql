@@ -2,7 +2,7 @@ enum LendingType {
   "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
   CDP
   "Pooled protocols pool all users assets into a single market"
-  Pooled
+  POOLED
 }
 
 enum RiskType {
@@ -41,6 +41,8 @@ type Protocol @entity {
   maxAssets: BigInt
   "All Markets within this Protocol"
   markets: [Market!]! @derivedFrom(field: "protocol")
+  "All Accounts that have used this Protocol"
+  accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol")
   "All events that happened in the protocol"
   events: [Event!]! @derivedFrom(field: "protocol")
 }
@@ -71,16 +73,10 @@ type Market @entity {
   protocol: Protocol!
   "Underlying Asset"
   asset: Asset!
-  "Underlying token symbol"
-  underlyingSymbol: String!
-  "Underlying token address"
-  underlyingAddress: Bytes!
-  "Underlying token name"
-  underlyingName: String!
+  "Borrowed asset if there is one"
+  collateralBackedAsset: Asset
   "CToken symbol"
   symbol: String!
-  "Underlying token decimal length"
-  underlyingDecimals: Int!
   "Current deposited amount in depositAsset"
   deposited: BigDecimal!
   "Current borrowed amount in borrowAsset"
@@ -102,9 +98,92 @@ type Account @entity {
   "True if user has ever borrowed"
   hasBorrowed: Boolean!
   "Number of times the account has gotten liquidated"
-  liquidatedCount: Int
+  liquidatedCount: Int!
   "Number of times the account liquidated others"
-  liquidatingCount: Int
+  liquidatingCount: Int!
+}
+
+"""
+History of an Account within a single Protocol
+"""
+type AccountInProtocol @entity {
+  "Account ID concatenated with Protocol ID"
+  id: ID!
+  "Protocol the Account is active in"
+  protocol: Protocol!
+  "Account which has participated in the Protocol"
+  account: Account!
+
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal
+
+  "The number of time Deposits have occurred in all Protocols by this Account"
+  depositCount: BigInt!
+  "The number of time Withdraws have occurred in all Protocols by this Account"
+  withdrawCount: BigInt!
+  "The number of time Borrows have occurred in all Protocols by this Account"
+  borrowCount: BigInt!
+  "The number of time Repays have occurred in all Protocols by this Account"
+  repayCount: BigInt!
+  "The number of time Liquidations have occurred in all Protocols by this Account"
+  liquidatedCount: BigInt!
+}
+
+"""
+Actions and history of an Account within a single Market
+"""
+type AccountInMarket @entity {
+  "Account ID concatenated with Market ID"
+  id: ID!
+  "Market the account is involved with"
+  market: Market!
+  "Account involved in this market"
+  account: Account!
+
+  "Current deposit amount in depositAsset"
+  deposited: BigDecimal!
+  "Current borrow amount in borrowAsset"
+  borrowed: BigDecimal!
+
+  "Accumulated deposited amount in depositAsset"
+  lifetimeDeposited: BigDecimal!
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigDecimal
+  "Accumulated withdrawn amount in depositAsset"
+  lifetimeWithdrawn: BigDecimal!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigDecimal
+  "Accumulated borrowed amount in borrowAsset"
+  lifetimeBorrowed: BigDecimal!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in borrowAsset"
+  lifetimeRepaid: BigDecimal!
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal
+  "Accumulated liquidated amount in depositAsset"
+  lifetimeLiquidated: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal
+
+  "The number of times Deposits have occurred in this Market by this Account"
+  depositCount: BigInt!
+  "The number of times Withdraws have occurred in this Market by this Account"
+  withdrawCount: BigInt!
+  "The number of times Borrows have occurred in this Market by this Account"
+  borrowCount: BigInt!
+  "The number of times Repays have occurred in this Market by this Account"
+  repayCount: BigInt!
+  "The number of times Liquidations have occurred in this Market by this Account"
+  liquidatedCount: BigInt!
 }
 
 """
