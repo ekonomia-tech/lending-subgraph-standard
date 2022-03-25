@@ -1,6 +1,6 @@
-import { Borrow, LiquidateBorrow, Mint, Redeem, RepayBorrow, Transfer } from "../../generated/Comptroller/CToken";
+import { AccrueInterest, Borrow, LiquidateBorrow, Mint, NewMarketInterestRateModel, NewReserveFactor, Redeem, RepayBorrow, Transfer } from "../../generated/Comptroller/CToken";
 import { Event } from "../../generated/schema";
-import { AddToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed, updateAccountStats } from "../helpers/account";
+import { addToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed, updateAccountStats } from "../helpers/account";
 import { getOrCreateAsset } from "../helpers/asset";
 import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal } from "../helpers/generic";
 import { getOrCreateMarket, updateMarketStats } from "../helpers/market";
@@ -109,7 +109,7 @@ export function handleBorrow(event: Borrow): void {
 }
 
 
-export function handleRepay(event: RepayBorrow): void {
+export function handleRepayBorrow(event: RepayBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
@@ -142,7 +142,7 @@ export function handleRepay(event: RepayBorrow): void {
 }
 
 
-export function handleLiquidate(event: LiquidateBorrow): void {
+export function handleLiquidateBorrow(event: LiquidateBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
     let protocol = getOrCreateProtocol(market.protocol)
@@ -153,8 +153,8 @@ export function handleLiquidate(event: LiquidateBorrow): void {
         .concat('-')
         .concat(event.transactionLogIndex.toString())
 
-    AddToLiquidationCount(account.id, true)
-    AddToLiquidationCount(liquidator.id, false)
+    addToLiquidationCount(account.id, true)
+    addToLiquidationCount(liquidator.id, false)
 
     let cTokenAmount = event.params.seizeTokens
         .toBigDecimal()
@@ -216,3 +216,9 @@ export function handleTransfer(event: Transfer): void {
 
     eventEntry.save()
 }
+
+export function handleAccrueInterest(event: AccrueInterest): void {}
+
+export function handleNewReserveFactor(event: NewReserveFactor): void {}
+
+export function handleNewMarketInterestRateModel(event: NewMarketInterestRateModel): void {}

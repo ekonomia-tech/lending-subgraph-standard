@@ -65,20 +65,19 @@ export function getOrCreateMarket(marketAddress: string): Market {
     market.asset = asset.id
     market.collateralBackedAsset = null
     market.save()
-    addMarketToProtocol(protocol.id, market.id)
     
     return market
 }
 
 export function updateMarketStats(marketId: string, eventType: string, amount: BigDecimal): void {
     let market = getOrCreateMarket(marketId)
-    if (eventType === "DEPOSIT") {
+    if (eventType == "DEPOSIT") {
         market.deposited.plus(amount)
-    } else if (eventType === "WITHDRAW") {
+    } else if (eventType == "WITHDRAW") {
         market.deposited.minus(amount)
-    } else if (eventType === "BORROW") {
+    } else if (eventType == "BORROW") {
         market.borrowed.plus(amount)
-    } else if (["REPAY", "LIQUIDAION"].includes(eventType)) {
+    } else if (["REPAY", "LIQUIDATION"].includes(eventType)) {
         market.borrowed.minus(amount)
     }
     market.save()

@@ -13,9 +13,3 @@ export function getOrCreateProtocol(protocolId: string): Protocol {
     }
     return protocol;
 }
-
-export function addMarketToProtocol(protocolId: string, marketId: string): void {
-    let protocol = getOrCreateProtocol(protocolId)
-    protocol.markets.push(marketId);
-    protocol.save()
-}

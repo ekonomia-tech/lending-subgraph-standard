@@ -20,7 +20,7 @@ export function markAccountAsBorrowed(accountId: string): void {
   account.save()
 }
 
-export function AddToLiquidationCount(accountId: string, isLiquidated: boolean): void {
+export function addToLiquidationCount(accountId: string, isLiquidated: boolean): void {
   // Adds a count if account is liduidated or liquidating
   let account = getOrCreateAccount(accountId)
   if (isLiquidated) {
