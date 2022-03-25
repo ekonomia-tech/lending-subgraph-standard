@@ -70,35 +70,35 @@ export function getOrCreateAccountInMarket(marketId: string, accountId: string):
 export function updateAccountStats(protocolId: string, marketId: string, accountId: string, amount: BigDecimal, eventType: string): void {
   let acm = getOrCreateAccountInMarket(marketId, accountId)
   let acp = getOrCreateAccountInProtocol(protocolId, accountId)
-  if (eventType === "DEPOSIT") {
+  if (eventType == "DEPOSIT") {
     acm.depositCount.plus(new BigInt(1))
     acm.deposited.plus(amount)
     acm.lifetimeDeposited.plus(amount)
 
     acp.depositCount.plus(new BigInt(1))
 
-  } else if (eventType === "WITHDRAW") {
+  } else if (eventType == "WITHDRAW") {
     acm.withdrawCount.plus(new BigInt(1))
     acm.deposited.minus(amount)
     acm.lifetimeWithdrawn.plus(amount)
 
     acp.withdrawCount.plus(new BigInt(1))
 
-  } else if (eventType === "BORROW") {
+  } else if (eventType == "BORROW") {
     acm.borrowCount.plus(new BigInt(1))
     acm.borrowed.plus(amount)
     acm.lifetimeBorrowed.plus(amount)
 
     acp.borrowCount.plus(new BigInt(1))
 
-  } else if (eventType === "REPAY") {
+  } else if (eventType == "REPAY") {
     acm.repayCount.plus(new BigInt(1))
     acm.borrowed.minus(amount)
     acm.lifetimeRepaid.plus(amount)
 
     acp.repayCount.plus(new BigInt(1))
 
-  } else if (eventType === "LIQUIDATION") {
+  } else if (eventType == "LIQUIDATION") {
     acm.liquidatedCount.plus(new BigInt(1))
     acm.borrowed.minus(amount)
     acm.lifetimeLiquidated.plus(amount)
