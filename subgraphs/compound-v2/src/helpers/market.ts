@@ -4,7 +4,7 @@ import { Market } from "../../generated/schema";
 import { CToken } from "../../generated/templates/CToken/CToken";
 import { getOrCreateAsset } from "./asset";
 import { CETH_ADDRESS , DAI_V1_ADDRESS , UNITROLLER_ADDRESS , zeroBD } from "./generic";
-import { addMarketToProtocol, getOrCreateProtocol } from "./protocol";
+import { getOrCreateProtocol } from "./protocol";
 
 export function getOrCreateMarket(marketAddress: string): Market {
     let market = Market.load(marketAddress);
