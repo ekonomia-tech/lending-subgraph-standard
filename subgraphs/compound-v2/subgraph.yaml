@@ -1,6 +1,6 @@
 specVersion: 0.0.2
 description: Compound is an open-source protocol for algorithmic, efficient Money Markets on the Ethereum blockchain.
-repository: https://github.com/graphprotocol/compound-V2-subgraph
+repository: https://github.com/davekaj/lending-subgraph-standard
 schema:
   file: ../../schema.graphql
 dataSources:

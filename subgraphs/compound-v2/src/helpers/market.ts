@@ -64,6 +64,8 @@ export function getOrCreateMarket(marketAddress: string): Market {
     market.protocol = protocol.id
     market.asset = asset.id
     market.collateralBackedAsset = null
+    market.stableTokenAddress = null
+    market.variableTokenAddress = null
     market.save()
     
     return market

@@ -87,6 +87,10 @@ type Market @entity {
   exchangeRate: BigDecimal!
   "Collateral factor determining how much one can borrow"
   collateralFactor: BigDecimal!
+  "Stable debt token address"
+  stableTokenAddress: Asset
+  "Variable debt token address"
+  variableTokenAddress: Asset
 }
 
 """
