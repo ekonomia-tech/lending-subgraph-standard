@@ -87,6 +87,10 @@ type Market @entity {
   exchangeRate: BigDecimal!
   "Collateral factor determining how much one can borrow"
   collateralFactor: BigDecimal!
+  "Stable interest debt token"
+  stableInterestDebtToken: Bytes
+  "Variable interest debt token"
+  variableInterestDebtToken: Bytes
 }
 
 """
@@ -212,4 +216,9 @@ type Event @entity {
   liquidator: Account
   "Account of the payer - Related to Repay event"
   payer: Account
+}
+
+type Contract @entity {
+  id: ID!
+  name: String
 }
