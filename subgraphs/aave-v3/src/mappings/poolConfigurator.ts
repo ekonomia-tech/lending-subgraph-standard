@@ -1,7 +1,7 @@
 import { ReserveInitialized } from '../../generated/templates/PoolConfigurator/PoolConfigurator'
-import { Contract, Market } from '../../generated/schema'
+import { Market } from '../../generated/schema'
 import { getOrCreateAsset } from '../helpers/asset'
-import { AAVE_V3_REGISTRY, zeroBD } from '../helpers/generic'
+import { AAVE_V3_REGISTRY, zeroBD, zeroInt } from '../helpers/generic'
 import { getOrCreateProtocol } from '../helpers/protocol'
 
 export function handleReserveInitialized(event: ReserveInitialized): void {
@@ -22,6 +22,11 @@ export function handleReserveInitialized(event: ReserveInitialized): void {
     market.interestRateModelAddress = event.params.interestRateStrategyAddress
     market.collateralFactor = zeroBD
     market.exchangeRate = zeroBD
+    market.liquidityRate = zeroInt
+    market.liquidityIndex = zeroInt
+    market.stableBorrowRate = zeroInt
+    market.variableBorrowRate = zeroInt
+    market.variableBorrowIndex = zeroInt
 
     market.save();
 }

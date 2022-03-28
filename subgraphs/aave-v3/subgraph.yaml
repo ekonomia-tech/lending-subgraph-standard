@@ -1,5 +1,5 @@
 specVersion: 0.0.2
-description: Compound is an open-source protocol for algorithmic, efficient Money Markets on the Ethereum blockchain.
+description: Aave is a decentralized non-custodial liquidity protocol where users can participate as depositors or borrowers.
 repository: https://github.com/ekonomia-tech/lending-subgraph-standard
 schema:
   file: ../../schema.graphql
@@ -88,4 +88,20 @@ templates:
           file: ./abis/erc20.json
       eventHandlers:
         - event: Supply(indexed address,address,indexed address,uint256,indexed uint16)
-          handler: handleSupply
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,indexed address,uint256)
+          handler: handleWithdraw
+        - event: Borrow(indexed address,address,indexed address,uint256,uint8,uint256,indexed uint16)
+          handler: handleBorrow
+        - event: Repay(indexed address,indexed address,indexed address,uint256,bool)
+          handler: handleRepay
+        - event: LiquidationCall(indexed address,indexed address,indexed address,uint256,uint256,address,bool)
+          handler: handleLiquidate
+        - event: SwapBorrowRateMode(indexed address,indexed address,uint8)
+          handler: handleSwapBorrowRateMode
+        - event: IsolationModeTotalDebtUpdated(indexed address,uint256)
+          handler: handleIsolationModeTotalDebtUpdated
+        - event: RebalanceStableBorrowRate(indexed address,indexed address)
+          handler: handleRebalanceStableBorrowRate
+        - event: ReserveDataUpdated(indexed address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleReserveDataUpdated

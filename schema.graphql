@@ -91,6 +91,16 @@ type Market @entity {
   stableInterestDebtToken: Bytes
   "Variable interest debt token"
   variableInterestDebtToken: Bytes
+  "The next liquidity rate"
+  liquidityRate: BigInt
+  "The next stable borrow rate"
+  stableBorrowRate: BigInt
+  "The next variable borrow rate"
+  variableBorrowRate: BigInt
+  "The next liquidity Index"
+  liquidityIndex: BigInt
+  "The next variable Borrow Index"
+  variableBorrowIndex: BigInt
 }
 
 """
@@ -210,15 +220,20 @@ type Event @entity {
   amount: BigDecimal!
   "Block timestamp"
   blockTime: Int!
+  "Block number"
+  blockNumber: Int!
   "Amount of Tokens transferred - used only in specific cases"
   xTokenAmount: BigDecimal
   "Liquidator that paid the debt: Relevant only for Liquidation event"
   liquidator: Account
   "Account of the payer - Related to Repay event"
   payer: Account
-}
-
-type Contract @entity {
-  id: ID!
-  name: String
+  "Account that was paid by account field"
+  onBehalfOf: Account
+  "Interest rate mode"
+  interestRateMode: Int
+  "Borrow rate"
+  borrowRate: BigInt
+  "Code used to register the integrator originating the operation, for potential rewards"
+  referralCode: Int
 }

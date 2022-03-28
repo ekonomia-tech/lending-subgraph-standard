@@ -34,6 +34,7 @@ export function handleMint(event: Mint): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
     eventEntry.save()
 
     updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
@@ -69,6 +70,7 @@ export function handleRedeem(event: Redeem): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -101,6 +103,7 @@ export function handleBorrow(event: Borrow): void {
     eventEntry.account = account.id
     eventEntry.amount = underlyingAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -134,6 +137,7 @@ export function handleRepayBorrow(event: RepayBorrow): void {
     eventEntry.payer = repayer.id
     eventEntry.amount = underlyingAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -175,7 +179,8 @@ export function handleLiquidateBorrow(event: LiquidateBorrow): void {
     eventEntry.liquidator = liquidator.id
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
-
+    eventEntry.blockNumber = event.block.number.toI32()
+    
     eventEntry.save()
 
     updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
@@ -213,7 +218,8 @@ export function handleTransfer(event: Transfer): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = transferAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
-
+    eventEntry.blockNumber = event.block.number.toI32()
+    
     eventEntry.save()
 }
 
