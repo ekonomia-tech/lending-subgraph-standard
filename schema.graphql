@@ -31,6 +31,8 @@ type Protocol @entity {
   network: Network!
   "Type of lending protocol"
   type: LendingType!
+  "Protocol Main Address"
+  address: Bytes!
   "Address of price oracle the comptroller uses"
   priceOracle: Bytes
   "Factor used to determine repayAmount for liquidating"
@@ -87,6 +89,20 @@ type Market @entity {
   exchangeRate: BigDecimal!
   "Collateral factor determining how much one can borrow"
   collateralFactor: BigDecimal!
+  "Stable interest debt token"
+  stableInterestDebtToken: Bytes
+  "Variable interest debt token"
+  variableInterestDebtToken: Bytes
+  "The next liquidity rate"
+  liquidityRate: BigInt
+  "The next stable borrow rate"
+  stableBorrowRate: BigInt
+  "The next variable borrow rate"
+  variableBorrowRate: BigInt
+  "The next liquidity Index"
+  liquidityIndex: BigInt
+  "The next variable Borrow Index"
+  variableBorrowIndex: BigInt
 }
 
 """
@@ -126,15 +142,15 @@ type AccountInProtocol @entity {
   lifetimeLiquidatedUSD: BigDecimal
 
   "The number of time Deposits have occurred in all Protocols by this Account"
-  depositCount: BigInt!
+  depositCount: Int!
   "The number of time Withdraws have occurred in all Protocols by this Account"
-  withdrawCount: BigInt!
+  withdrawCount: Int!
   "The number of time Borrows have occurred in all Protocols by this Account"
-  borrowCount: BigInt!
+  borrowCount: Int!
   "The number of time Repays have occurred in all Protocols by this Account"
-  repayCount: BigInt!
+  repayCount: Int!
   "The number of time Liquidations have occurred in all Protocols by this Account"
-  liquidatedCount: BigInt!
+  liquidatedCount: Int!
 }
 
 """
@@ -175,15 +191,15 @@ type AccountInMarket @entity {
   lifetimeLiquidatedUSD: BigDecimal
 
   "The number of times Deposits have occurred in this Market by this Account"
-  depositCount: BigInt!
+  depositCount: Int!
   "The number of times Withdraws have occurred in this Market by this Account"
-  withdrawCount: BigInt!
+  withdrawCount: Int!
   "The number of times Borrows have occurred in this Market by this Account"
-  borrowCount: BigInt!
+  borrowCount: Int!
   "The number of times Repays have occurred in this Market by this Account"
-  repayCount: BigInt!
+  repayCount: Int!
   "The number of times Liquidations have occurred in this Market by this Account"
-  liquidatedCount: BigInt!
+  liquidatedCount: Int!
 }
 
 """
@@ -206,10 +222,23 @@ type Event @entity {
   amount: BigDecimal!
   "Block timestamp"
   blockTime: Int!
+  "Block number"
+  blockNumber: Int!
   "Amount of Tokens transferred - used only in specific cases"
   xTokenAmount: BigDecimal
   "Liquidator that paid the debt: Relevant only for Liquidation event"
   liquidator: Account
   "Account of the payer - Related to Repay event"
   payer: Account
+  "Account that was paid by account field"
+  onBehalfOf: Account
+  "Interest rate mode"
+  interestRateMode: Int
+  "Borrow rate"
+  borrowRate: BigInt
+}
+
+type Contract @entity {
+  id: ID!
+  name: String
 }

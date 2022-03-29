@@ -4,12 +4,12 @@ import { addToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed, updat
 import { getOrCreateAsset } from "../helpers/asset";
 import { cTokenDecimals, cTokenDecimalsBD, exponentToBigDecimal } from "../helpers/generic";
 import { getOrCreateMarket, updateMarketStats } from "../helpers/market";
-import { getOrCreateProtocol } from "../helpers/protocol";
+import { getProtocol } from "../helpers/protocol";
 
 export function handleMint(event: Mint): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.minter.toHexString())
     let mintId = event.transaction.hash
     .toHexString()
@@ -34,6 +34,7 @@ export function handleMint(event: Mint): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
     eventEntry.save()
 
     updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
@@ -44,7 +45,7 @@ export function handleMint(event: Mint): void {
 export function handleRedeem(event: Redeem): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.redeemer.toHexString())
     let redeemId = event.transaction.hash
     .toHexString()
@@ -69,6 +70,7 @@ export function handleRedeem(event: Redeem): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -79,7 +81,7 @@ export function handleRedeem(event: Redeem): void {
 export function handleBorrow(event: Borrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
     let borrowId = event.transaction.hash
     .toHexString()
@@ -101,6 +103,7 @@ export function handleBorrow(event: Borrow): void {
     eventEntry.account = account.id
     eventEntry.amount = underlyingAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -112,7 +115,7 @@ export function handleBorrow(event: Borrow): void {
 export function handleRepayBorrow(event: RepayBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
     let repayer = getOrCreateAccount(event.params.payer.toHexString())
     let repayId = event.transaction.hash
@@ -134,6 +137,7 @@ export function handleRepayBorrow(event: RepayBorrow): void {
     eventEntry.payer = repayer.id
     eventEntry.amount = underlyingAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
+    eventEntry.blockNumber = event.block.number.toI32()
 
     eventEntry.save()
 
@@ -145,7 +149,7 @@ export function handleRepayBorrow(event: RepayBorrow): void {
 export function handleLiquidateBorrow(event: LiquidateBorrow): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.borrower.toHexString())
     let liquidator = getOrCreateAccount(event.params.liquidator.toHexString())
     let liquidationId = event.transaction.hash
@@ -153,8 +157,8 @@ export function handleLiquidateBorrow(event: LiquidateBorrow): void {
         .concat('-')
         .concat(event.transactionLogIndex.toString())
 
-    addToLiquidationCount(account.id, true)
-    addToLiquidationCount(liquidator.id, false)
+    addToLiquidationCount(account, true)
+    addToLiquidationCount(liquidator, false)
 
     let cTokenAmount = event.params.seizeTokens
         .toBigDecimal()
@@ -175,7 +179,8 @@ export function handleLiquidateBorrow(event: LiquidateBorrow): void {
     eventEntry.liquidator = liquidator.id
     eventEntry.xTokenAmount = cTokenAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
-
+    eventEntry.blockNumber = event.block.number.toI32()
+    
     eventEntry.save()
 
     updateMarketStats(market.id, eventEntry.eventType, underlyingAmount)
@@ -186,7 +191,7 @@ export function handleLiquidateBorrow(event: LiquidateBorrow): void {
 export function handleTransfer(event: Transfer): void {
     let market = getOrCreateMarket(event.address.toHexString())
     let asset = getOrCreateAsset(market.asset)
-    let protocol = getOrCreateProtocol(market.protocol)
+    let protocol = getProtocol(market.protocol)
     let account = getOrCreateAccount(event.params.from.toHexString())
     let to = getOrCreateAccount(event.params.to.toHexString())
     let transferId = event.transaction.hash
@@ -213,7 +218,8 @@ export function handleTransfer(event: Transfer): void {
     eventEntry.amount = underlyingAmount
     eventEntry.xTokenAmount = transferAmount
     eventEntry.blockTime = event.block.timestamp.toI32()
-
+    eventEntry.blockNumber = event.block.number.toI32()
+    
     eventEntry.save()
 }
 

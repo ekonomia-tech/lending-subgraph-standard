@@ -25,5 +25,5 @@ export function getProtocol(protocolId: string): Protocol {
 }
 
 export function getNetwork(protocolAddress: string): string {
-    return "ETHEREUM"
+    return "POLYGON"
 }
