@@ -1,10 +1,10 @@
 import { Address, BigDecimal } from "@graphprotocol/graph-ts";
 import { ERC20 } from "../../generated/Comptroller/ERC20";
-import { Market } from "../../generated/schema";
+import { Market, Protocol } from "../../generated/schema";
 import { CToken } from "../../generated/templates/CToken/CToken";
 import { getOrCreateAsset } from "./asset";
 import { CETH_ADDRESS , DAI_V1_ADDRESS , UNITROLLER_ADDRESS , zeroBD } from "./generic";
-import { getOrCreateProtocol } from "./protocol";
+import { createProtocol } from "./protocol";
 
 export function getOrCreateMarket(marketAddress: string): Market {
     let market = Market.load(marketAddress);
@@ -13,7 +13,11 @@ export function getOrCreateMarket(marketAddress: string): Market {
     }
     
     let contract = CToken.bind(Address.fromString(marketAddress))
-    let protocol = getOrCreateProtocol(UNITROLLER_ADDRESS);
+    let protocol = Protocol.load("COMPOUND-ETHREUM")
+    if (!protocol) {
+      protocol = createProtocol(Address.fromString(UNITROLLER_ADDRESS), "COMPOUND")
+    }
+
     let assetAddress: Address;
     let assetSymbol: string
     let assetName: string

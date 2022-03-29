@@ -1,13 +1,13 @@
 import { ReserveInitialized } from '../../generated/templates/PoolConfigurator/PoolConfigurator'
 import { Market } from '../../generated/schema'
 import { getOrCreateAsset } from '../helpers/asset'
-import { AAVE_V3_REGISTRY, zeroBD, zeroInt } from '../helpers/generic'
-import { getOrCreateProtocol } from '../helpers/protocol'
+import { zeroBD, zeroInt } from '../helpers/generic'
+import { getProtocol } from '../helpers/protocol'
 
 export function handleReserveInitialized(event: ReserveInitialized): void {
     
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = new Market(event.params.asset.toHexString())
+    let protocol = getProtocol("AAVE-V3-POLYGON")
     let asset = getOrCreateAsset(event.params.asset.toHexString())
     let aTokenAsset = getOrCreateAsset(event.params.aToken.toHexString())
     market.protocol = protocol.id

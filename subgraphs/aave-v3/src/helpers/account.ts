@@ -20,9 +20,8 @@ export function markAccountAsBorrowed(accountId: string): void {
   account.save()
 }
 
-export function addToLiquidationCount(accountId: string, isLiquidated: boolean): void {
+export function addToLiquidationCount(account: Account, isLiquidated: boolean): void {
   // Adds a count if account is liduidated or liquidating
-  let account = getOrCreateAccount(accountId)
   if (isLiquidated) {
     account.liquidatedCount += 1
   } else {
@@ -38,11 +37,11 @@ export function getOrCreateAccountInProtocol(protocolId: string, accountId: stri
     acp = new AccountInProtocol(acpId)
     acp.protocol = protocolId
     acp.account = accountId
-    acp.depositCount = zeroInt
-    acp.withdrawCount = zeroInt
-    acp.borrowCount = zeroInt
-    acp.repayCount = zeroInt
-    acp.liquidatedCount = zeroInt
+    acp.depositCount = 0
+    acp.withdrawCount = 0
+    acp.borrowCount = 0
+    acp.repayCount = 0
+    acp.liquidatedCount = 0
     acp.save()
   }
   return acp
@@ -71,39 +70,39 @@ export function updateAccountStats(protocolId: string, marketId: string, account
   let acm = getOrCreateAccountInMarket(marketId, accountId)
   let acp = getOrCreateAccountInProtocol(protocolId, accountId)
   if (eventType == "DEPOSIT") {
-    acm.depositCount = acm.depositCount.plus(new BigInt(1))
+    acm.depositCount += 1
     acm.deposited = acm.deposited.plus(amount)
     acm.lifetimeDeposited = acm.lifetimeDeposited.plus(amount)
 
-    acp.depositCount = acp.depositCount.plus(new BigInt(1))
+    acp.depositCount += 1
 
   } else if (eventType == "WITHDRAW") {
-    acm.withdrawCount = acm.withdrawCount.plus(new BigInt(1))
+    acm.withdrawCount += 1
     acm.deposited = acm.deposited.minus(amount)
     acm.lifetimeWithdrawn = acm.lifetimeWithdrawn.plus(amount)
 
-    acp.withdrawCount = acp.withdrawCount.plus(new BigInt(1))
+    acp.withdrawCount += 1
 
   } else if (eventType == "BORROW") {
-    acm.borrowCount = acm.borrowCount.plus(new BigInt(1))
+    acm.borrowCount += 1
     acm.borrowed = acm.borrowed.plus(amount)
     acm.lifetimeBorrowed = acm.lifetimeBorrowed.plus(amount)
 
-    acp.borrowCount = acp.borrowCount.plus(new BigInt(1))
+    acp.borrowCount += 1
 
   } else if (eventType == "REPAY") {
-    acm.repayCount = acm.repayCount.plus(new BigInt(1))
+    acm.repayCount += 1
     acm.borrowed = acm.borrowed.minus(amount)
     acm.lifetimeRepaid = acm.lifetimeRepaid.plus(amount)
 
-    acp.repayCount = acp.repayCount.plus(new BigInt(1))
+    acp.repayCount += 1
 
   } else if (eventType == "LIQUIDATION") {
-    acm.liquidatedCount = acm.liquidatedCount.plus(new BigInt(1))
+    acm.liquidatedCount += 1
     acm.borrowed = acm.borrowed.minus(amount)
     acm.lifetimeLiquidated = acm.lifetimeLiquidated.plus(amount)
 
-    acp.liquidatedCount = acp.liquidatedCount.plus(new BigInt(1))
+    acp.liquidatedCount += 1
 
   }
 

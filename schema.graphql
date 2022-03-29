@@ -31,6 +31,8 @@ type Protocol @entity {
   network: Network!
   "Type of lending protocol"
   type: LendingType!
+  "Protocol Main Address"
+  address: Bytes!
   "Address of price oracle the comptroller uses"
   priceOracle: Bytes
   "Factor used to determine repayAmount for liquidating"
@@ -140,15 +142,15 @@ type AccountInProtocol @entity {
   lifetimeLiquidatedUSD: BigDecimal
 
   "The number of time Deposits have occurred in all Protocols by this Account"
-  depositCount: BigInt!
+  depositCount: Int!
   "The number of time Withdraws have occurred in all Protocols by this Account"
-  withdrawCount: BigInt!
+  withdrawCount: Int!
   "The number of time Borrows have occurred in all Protocols by this Account"
-  borrowCount: BigInt!
+  borrowCount: Int!
   "The number of time Repays have occurred in all Protocols by this Account"
-  repayCount: BigInt!
+  repayCount: Int!
   "The number of time Liquidations have occurred in all Protocols by this Account"
-  liquidatedCount: BigInt!
+  liquidatedCount: Int!
 }
 
 """
@@ -189,15 +191,15 @@ type AccountInMarket @entity {
   lifetimeLiquidatedUSD: BigDecimal
 
   "The number of times Deposits have occurred in this Market by this Account"
-  depositCount: BigInt!
+  depositCount: Int!
   "The number of times Withdraws have occurred in this Market by this Account"
-  withdrawCount: BigInt!
+  withdrawCount: Int!
   "The number of times Borrows have occurred in this Market by this Account"
-  borrowCount: BigInt!
+  borrowCount: Int!
   "The number of times Repays have occurred in this Market by this Account"
-  repayCount: BigInt!
+  repayCount: Int!
   "The number of times Liquidations have occurred in this Market by this Account"
-  liquidatedCount: BigInt!
+  liquidatedCount: Int!
 }
 
 """
@@ -234,8 +236,6 @@ type Event @entity {
   interestRateMode: Int
   "Borrow rate"
   borrowRate: BigInt
-  "Code used to register the integrator originating the operation, for potential rewards"
-  referralCode: Int
 }
 
 type Contract @entity {

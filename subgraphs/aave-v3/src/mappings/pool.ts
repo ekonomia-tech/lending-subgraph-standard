@@ -2,13 +2,13 @@ import { getOrCreateAsset } from '../../../compound-v2/src/helpers/asset';
 import { Event } from '../../generated/schema';
 import { Borrow, IsolationModeTotalDebtUpdated, LiquidationCall, RebalanceStableBorrowRate, Repay, ReserveDataUpdated, Supply, SwapBorrowRateMode, Withdraw } from '../../generated/templates/Pool/Pool';
 import { addToLiquidationCount, getOrCreateAccount, markAccountAsBorrowed, updateAccountStats } from '../helpers/account';
-import { AAVE_V3_REGISTRY, exponentToBigDecimal } from '../helpers/generic';
+import { exponentToBigDecimal } from '../helpers/generic';
 import { getMarket, updateMarketStats } from '../helpers/market';
-import { getOrCreateProtocol } from '../helpers/protocol';
+import { getProtocol } from '../helpers/protocol';
 
 export function handleBorrow(event: Borrow): void {
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = getMarket(event.params.reserve.toHexString());
+    let protocol = getProtocol(market.protocol)
     let asset = getOrCreateAsset(market.asset);
     let account = getOrCreateAccount(event.params.user.toHexString())
     let onBehalfOf = getOrCreateAccount(event.params.onBehalfOf.toHexString())
@@ -41,8 +41,8 @@ export function handleBorrow(event: Borrow): void {
   }
 
 export function handleDeposit(event: Supply): void {
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = getMarket(event.params.reserve.toHexString());
+    let protocol = getProtocol(market.protocol)
     let asset = getOrCreateAsset(market.asset);
     let account = getOrCreateAccount(event.params.user.toHexString())
     let onBehalfOf = getOrCreateAccount(event.params.onBehalfOf.toHexString())
@@ -65,7 +65,6 @@ export function handleDeposit(event: Supply): void {
     eventEntry.amount = depositAmount;
     eventEntry.blockTime = event.block.timestamp.toI32()
     eventEntry.blockNumber = event.block.number.toI32()
-    eventEntry.referralCode = event.params.referralCode
     eventEntry.save();
 
     updateMarketStats(market.id, "DEPOSIT", depositAmount)
@@ -73,8 +72,8 @@ export function handleDeposit(event: Supply): void {
 }
 
 export function handleWithdraw(event: Withdraw): void {
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = getMarket(event.params.reserve.toHexString())
+    let protocol = getProtocol(market.protocol)
     let asset = getOrCreateAsset(market.asset);
     let account = getOrCreateAccount(event.params.user.toHexString())
     let to = getOrCreateAccount(event.params.to.toHexString())
@@ -104,8 +103,8 @@ export function handleWithdraw(event: Withdraw): void {
 }
 
 export function handleRepay(event: Repay): void {
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = getMarket(event.params.reserve.toHexString())
+    let protocol = getProtocol(market.protocol)
     let asset = getOrCreateAsset(market.asset);
     let account = getOrCreateAccount(event.params.user.toHexString())
     let repayer = getOrCreateAccount(event.params.repayer.toHexString())
@@ -135,16 +134,16 @@ export function handleRepay(event: Repay): void {
 }
 
 export function handleLiquidate(event: LiquidationCall): void {
-    let protocol = getOrCreateProtocol(AAVE_V3_REGISTRY)
     let market = getMarket(event.params.debtAsset.toHexString())
+    let protocol = getProtocol(market.protocol)
     let asset = getOrCreateAsset(market.asset);
     let collateralMarket = getMarket(event.params.collateralAsset.toHexString())
     let collateralAsset = getOrCreateAsset(collateralMarket.asset)
     let account = getOrCreateAccount(event.params.user.toHexString())
     let liquidator = getOrCreateAccount(event.params.liquidator.toHexString())
 
-    addToLiquidationCount(account.id, true)
-    addToLiquidationCount(liquidator.id, false)
+    addToLiquidationCount(account, true)
+    addToLiquidationCount(liquidator, false)
 
     let repayId = event.transaction.hash
       .toHexString()
