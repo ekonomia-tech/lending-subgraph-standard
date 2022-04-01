@@ -1,0 +1,251 @@
+"""
+This is just Steve's own version of the schema with nots to better understand the layout of things and how the liquity and other subgraphs will work to update these entities and fields. Steve comments are marked with # SP:
+"""
+
+enum LendingType {
+  "Collateralized Debt Position (CDP) protocols have singular isolated positions created by users. We aggregate them to give a single view of a market"
+  CDP # SP: Liquity
+  "Pooled protocols pool all users assets into a single market"
+  POOLED
+}
+
+enum RiskType {
+  "Global risk means each users position in a market is combined for one score to determine if they can be liquidated"
+  GLOBAL # SP: We have a global TCA. It crosses a certain threshold, the smart contract(s) should emit events outlining this, and then if there are subsequent liquidations that occur after the fact, those liquidations should be captured by events too. So we shouldn't need to have some field within individual 'TROVES' where we keep track of TCA / 'mode' of the protocol because TROVE existence will just be updated as events come in.
+  "Isolated risk means each users position in a market or CDP is isolated for risk of liquidation"
+  ISOLATED # SP: This is the general case for all TROVES. I would think that a front-end or third party would want to see the global risk traits of the protocol though.
+}
+
+enum Network {
+  "The ethereum network"
+  ETHEREUM # SP: only on ETH I think atm.
+  "The polygon network"
+  POLYGON
+  "The avalanche network"
+  AVALANCHE
+}
+
+"""
+Protocol represents all aggregated information of a single protocol on a single network.
+"""
+type Protocol @entity {
+  "The Name of the Protocol"
+  id: ID!
+  "The Network the protocol exists on - Ethereum, Polygon, etc."
+  network: Network!
+  "Type of lending protocol"
+  type: LendingType!
+  "Protocol Main Address"
+  address: Bytes!
+  "Address of price oracle the comptroller uses"
+  priceOracle: Bytes
+  "Factor used to determine repayAmount for liquidating"
+  closeFactor: BigInt # SP: for Aave and COMP, they use something called a closeFactor. The closeFactor outlines how much of the position can actually be paid off by the liquidator at a respective discount (~8% for example). For liquity, Troves can fall under ICA of 110%, whereby their entire position can be paid off and the collateral is recovered by those calling liquidate... I can't recall if the individual gets the total liquidation or if the stability pools or elsewise gets it.
+  "The percent bonus liquidators get for liquidating"
+  liquidationIncentive: BigInt # SP: TODO: for liquity, this is a 0.5% of the liquidated TROVE.
+  "Max assets a single user can enter"
+  maxAssets: BigInt # SP: TODO: in COMP, people can enter multiple asset classes as lenders and borrowers. In Liquity, it is just "lend ETH, borrow LUSD"
+  "All Markets within this Protocol"
+  markets: [Market!]! @derivedFrom(field: "protocol") #SP: TODO: confirm this: Markets in the sense of COMP and AAVE are the actual pairs of lenders and borrowers for an asset class. Pretty sure you can lend USDC, and then borrow DAI for example. So the market here is USDC/DAI? 
+  "All Accounts that have used this Protocol"
+  accounts: [AccountInProtocol!]! @derivedFrom(field: "protocol") # SP: unique addresses that have used the protocol
+  "All events that happened in the protocol"
+  events: [Event!]! @derivedFrom(field: "protocol") # SP: Guess we're tracking all possible events that ever have happened. So I could query this protocol entity and see what 'Liquidation' events have occurred.
+}
+
+"""
+An asset used in a lending protocol. All assets should follow ERC-20 Standard
+"""
+type Asset @entity {
+  "Contract address"
+  id: ID! # SP: TODO: Hardcode, or instantiate these upon first event emission (TROVE created, or something).
+  "Token symbol"
+  symbol: String!
+  "Name of asset"
+  name: String!
+  "Decimals of the asset"
+  decimals: Int!
+}
+
+"""
+A single Market within a Protocol. A Market can be a single pool where all assets are pooled together. It can also be a combination of Collateralized Debt Positions (CDPs). The CDPs are aggregated together to represent a uniform Market. A Market can only contain 1 depositAsset and 1 borrowAsset. #SP: TODO: for liquity, this would be aggreagted CDPs. Sum up the debt and sum up the collateral, obtain general market details. 
+"""
+type Market @entity {
+  "Contract address"
+  id: ID!
+  "Name of the Market"
+  name: String!
+  "The Protocol the Market is a part of"
+  protocol: Protocol!
+  "Underlying Asset"
+  asset: Asset!
+  "Borrowed asset if there is one"
+  collateralBackedAsset: Asset
+  "CToken symbol"
+  symbol: String! # SP: TODO: I think for Liquity, this is going to be dependent on how the protocol keeps track of an account's TROVE details (debt and collateral). Is it a mapping(s)? Cause the TROVE owner could just sell their LUSD for something else, so that tx is separate to how much debt they still owe. Perhaps Liquity has a separate contract or token to represent the collateral amount specifically (what cTokens effectively do - I think they don't though).
+  "Current deposited amount in depositAsset"
+  deposited: BigDecimal!
+  "Current borrowed amount in borrowAsset"
+  borrowed: BigDecimal!
+  "Address of the interest rate model"
+  interestRateModelAddress: Bytes! #SP: TODO: find interest rate model contract if there is one - I think for COMP this is the rate that you get when you lend? So this is a 'positive' interest rate, that helps the lender... for liquity this would be zero then since the lender is not separate from their CDP. I think for Liquity, ah the redemption and borrow fees are variable. But in this case of the schema, is this referring to the interestRate the borrow and supply rates? **--> TODO: I think that this would replace the need for any of the interestRates listed below (those that aren't required).**
+  "Exchange rate of tokens / cTokens"
+  exchangeRate: BigDecimal! # SP: TODO: for liquity, I believe this is 1.10 --> you get 1 LUSD for 1.1 USD worth of ETH.
+  "Collateral factor determining how much one can borrow"
+  collateralFactor: BigDecimal! # SP: 1.1
+  "Stable interest debt token"
+  stableInterestDebtToken: Bytes
+  "Variable interest debt token"
+  variableInterestDebtToken: Bytes # SP: TODO: I think that this is where we could replace BorrowRate with singleTimeBorrowRate (but BorrowRate works though all in all). Is there a way to signal 'one-time-fee' such as liquity has for their redemption and borrow rates?
+  # SP: Hmm. I think 
+  "The next liquidity rate"
+  liquidityRate: BigInt # SP: TODO: not sure what this... 
+  "The next stable borrow rate"
+  stableBorrowRate: BigInt # SP TODO: not sure what this is... I think this is interest that the borrow accrues on their loan?
+  "The next variable borrow rate"
+  variableBorrowRate: BigInt # SP TODO: not sure what this is... I think this is interest that the borrow accrues on their loan?
+  "The next liquidity Index"
+  liquidityIndex: BigInt # SP: TODO: not sure what this... 
+  "The next variable Borrow Index"
+  variableBorrowIndex: BigInt # SP: TODO: not sure what this... 
+}
+
+"""
+An account that has interacted with at least 1 lending protocol tracked in the Subgraph
+SP: TODO: This can work with liquity just fine. Everytime an account opens up a trove for the first time, we record it. When they close their account, we still keep track of it though. It is just a closed account.
+"""
+type Account @entity {
+  "Contract address"
+  id: ID!
+  "True if user has ever borrowed"
+  hasBorrowed: Boolean!
+  "Number of times the account has gotten liquidated"
+  liquidatedCount: Int!
+  "Number of times the account liquidated others"
+  liquidatingCount: Int!
+}
+
+"""
+History of an Account within a single Protocol
+"""
+type AccountInProtocol @entity {
+  "Account ID concatenated with Protocol ID"
+  id: ID!
+  "Protocol the Account is active in"
+  protocol: Protocol!
+  "Account which has participated in the Protocol"
+  account: Account!
+
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigInt #SP: so this is summed up everytime there is a deposit Event (for COMP, for liquity we need to see what events are emitted). In general, if it is here then we would want the amount if we can get it.
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigInt
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal
+
+  "The number of time Deposits have occurred in all Protocols by this Account"
+  depositCount: Int! # SP: TODO: these are the more important metrics. I think that once I get these counts in, then I can start to see where I can start summing the actual amounts deposited, withdrawn, and liquidated. Tie them to the same eventHandler if possible.
+  "The number of time Withdraws have occurred in all Protocols by this Account"
+  withdrawCount: Int!
+  "The number of time Borrows have occurred in all Protocols by this Account"
+  borrowCount: Int!
+  "The number of time Repays have occurred in all Protocols by this Account"
+  repayCount: Int!
+  "The number of time Liquidations have occurred in all Protocols by this Account"
+  liquidatedCount: Int!
+}
+
+"""
+Actions and history of an Account within a single Market
+SP: Liquity would need to have a single aggregate market.. and so this is the record of a respective account in the liquity ecosystem really.
+"""
+type AccountInMarket @entity {
+  "Account ID concatenated with Market ID"
+  id: ID!
+  "Market the account is involved with"
+  market: Market!
+  "Account involved in this market"
+  account: Account!
+
+  "Current deposit amount in depositAsset"
+  deposited: BigDecimal!
+  "Current borrow amount in borrowAsset"
+  borrowed: BigDecimal!
+
+  "Accumulated deposited amount in depositAsset"
+  lifetimeDeposited: BigDecimal!
+  "Accumulated deposited amount in USD. Conversion into USD done at event time"
+  lifetimeDepositedUSD: BigDecimal
+  "Accumulated withdrawn amount in depositAsset"
+  lifetimeWithdrawn: BigDecimal!
+  "Accumulated withdrawn amount in USD. Conversion into USD done at event time"
+  lifetimeWithdrawnUSD: BigDecimal
+  "Accumulated borrowed amount in borrowAsset"
+  lifetimeBorrowed: BigDecimal!
+  "Accumulated borrowed amount in USD. Conversion into USD done at event time"
+  lifetimeBorrowedUSD: BigDecimal
+  "Accumulated repaid amount in borrowAsset"
+  lifetimeRepaid: BigDecimal!
+  "Accumulated repaid amount in USD. Conversion into USD done at event time"
+  lifetimeRepaidUSD: BigDecimal
+  "Accumulated liquidated amount in depositAsset"
+  lifetimeLiquidated: BigDecimal!
+  "Accumulated liquidated amount in USD. Conversion into USD done at event time"
+  lifetimeLiquidatedUSD: BigDecimal
+
+  "The number of times Deposits have occurred in this Market by this Account"
+  depositCount: Int!
+  "The number of times Withdraws have occurred in this Market by this Account"
+  withdrawCount: Int!
+  "The number of times Borrows have occurred in this Market by this Account"
+  borrowCount: Int!
+  "The number of times Repays have occurred in this Market by this Account"
+  repayCount: Int!
+  "The number of times Liquidations have occurred in this Market by this Account"
+  liquidatedCount: Int!
+}
+
+"""
+An event is a general action that occurs in a Lending Protocol
+"""
+type Event @entity {
+  "The Protocol the event originated from"
+  protocol: Protocol!
+  "Transaction hash concatenated with log index"
+  id: ID!
+  "The Market within a Protocol the event originated from"
+  market: Market!
+  "Main account involved in the event"
+  account: Account!
+  "Account to be transferred to - Relevant to Transfer event"
+  to: Account
+  "Event type: Deposit Withdraw Borrow Repay Liquidate"
+  eventType: String!
+  "Amount of Tokens transferred - Underlying"
+  amount: BigDecimal!
+  "Block timestamp"
+  blockTime: Int!
+  "Block number"
+  blockNumber: Int!
+  "Amount of Tokens transferred - used only in specific cases"
+  xTokenAmount: BigDecimal
+  "Liquidator that paid the debt: Relevant only for Liquidation event"
+  liquidator: Account
+  "Account of the payer - Related to Repay event"
+  payer: Account
+  "Account that was paid by account field"
+  onBehalfOf: Account
+  "Interest rate mode"
+  interestRateMode: Int
+  "Borrow rate"
+  borrowRate: BigInt
+}
+
+type Contract @entity {
+  id: ID!
+  name: String
+}

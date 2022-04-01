@@ -1,0 +1,124 @@
+specVersion: 0.0.2
+description: Account-Focused subgraph on liquity, a decentralized borrowing protocol offering interest-free liquidity against collateral in Ether.
+repository: https://github.com/ekonomia-tech/lending-subgraph-standard
+schema:
+  file: ../../schema.graphql
+dataSources:
+  - name: TroveManager
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: TroveManager
+      address: "0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2"
+      startBlock: 12178557
+    mapping:
+      file: ./src/mappings/TroveManager.ts
+      language: wasm/assemblyscript
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      entities:
+        - todo
+      abis:
+        - name: TroveManager
+          file: ./abis/TroveManager.json
+      eventHandlers:
+        - event: TroveUpdated(indexed address,uint256,uint256,uint256,uint8)
+          handler: handleTroveUpdated
+        - event: TroveLiquidated(indexed address,uint256,uint256,uint8)
+          handler: handleTroveLiquidated
+        - event: Liquidation(uint256,uint256,uint256,uint256)
+          handler: handleLiquidation
+        - event: Redemption(uint256,uint256,uint256,uint256)
+          handler: handleRedemption
+        - event: LTermsUpdated(uint256,uint256)
+          handler: handleLTermsUpdated
+  - name: BorrowerOperations
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: BorrowerOperations
+      address: "0x24179CD81c9e782A4096035f7eC97fB8B783e007"
+      startBlock: 12178582
+    mapping:
+      file: ./src/mappings/BorrowerOperations.ts
+      language: wasm/assemblyscript
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      entities:
+        - todo
+      abis:
+        - name: BorrowerOperations
+          file: ./abis/BorrowerOperations.json
+      eventHandlers:
+        - event: TroveUpdated(indexed address,uint256,uint256,uint256,uint8)
+          handler: handleTroveUpdated
+        - event: LUSDBorrowingFeePaid(indexed address,uint256)
+          handler: handleLUSDBorrowingFeePaid
+  - name: StabilityPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: StabilityPool
+      address: "0x66017D22b0f8556afDd19FC67041899Eb65a21bb"
+      startBlock: 12178565
+    mapping:
+      file: ./src/mappings/StabilityPool.ts
+      language: wasm/assemblyscript
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      entities:
+        - todo
+      abis:
+        - name: StabilityPool
+          file: ./abis/StabilityPool.json
+      eventHandlers:
+        - event: UserDepositChanged(indexed address,uint256)
+          handler: handleUserDepositChanged
+        - event: ETHGainWithdrawn(indexed address,uint256,uint256)
+          handler: handleETHGainWithdrawn
+        - event: FrontEndRegistered(indexed address,uint256)
+          handler: handleFrontendRegistered
+        - event: FrontEndTagSet(indexed address,indexed address)
+          handler: handleFrontendTagSet
+  - name: CollSurplusPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CollSurplusPool
+      address: "0x3D32e8b97Ed5881324241Cf03b2DA5E2EBcE5521"
+      startBlock: 12178578
+    mapping:
+      file: ./src/mappings/CollSurplusPool.ts
+      language: wasm/assemblyscript
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      entities:
+        - todo
+      abis:
+        - name: CollSurplusPool
+          file: ./abis/CollSurplusPool.json
+      eventHandlers:
+        - event: CollBalanceUpdated(indexed address,uint256)
+          handler: handleCollSurplusBalanceUpdated
+  - name: LQTYStaking
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: LQTYStaking
+      address: "0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d"
+      startBlock: 12178607
+    mapping:
+      file: ./src/mappings/LqtyStake.ts
+      language: wasm/assemblyscript
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      entities:
+        - todo
+      abis:
+        - name: LQTYStaking
+          file: ./abis/LQTYStaking.json
+      eventHandlers:
+        - event: StakeChanged(indexed address,uint256)
+          handler: handleStakeChanged
+        - event: StakingGainsWithdrawn(indexed address,uint256,uint256)
+          handler: handleStakeGainsWithdrawn
