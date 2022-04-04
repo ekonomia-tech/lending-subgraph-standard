@@ -1,3 +1,5 @@
+import { ethereum, Address, BigInt } from '@graphprotocol/graph-ts'
+
 import { StakeChanged, StakingGainsWithdrawn } from '../../generated/LQTYStaking/LQTYStaking'
 
 /* ========== EVENT HANDLERS ========== */

@@ -8,6 +8,10 @@ import {
   LTermsUpdated,
 } from '../../generated/TroveManager/TroveManager'
 
+/**
+ * @notice for subgraphv1, this only changes market and other high-level totals
+/*
+
 /* ========== EVENT HANDLERS ========== */
 
 export function handleTroveUpdated(event: TroveUpdated): void {}
