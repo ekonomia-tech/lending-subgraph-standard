@@ -49,7 +49,11 @@ dataSources:
       abis:
         - name: BorrowerOperations
           file: ./abis/BorrowerOperations.json
+        - name: ERC20
+          file: ./abis/erc20.json
       eventHandlers:
+        - event: TroveManagerAddressChanged(address)
+          handler: handleTroveManagerAddressChanged
         - event: TroveUpdated(indexed address,uint256,uint256,uint256,uint8)
           handler: handleTroveUpdated
         - event: LUSDBorrowingFeePaid(indexed address,uint256)
@@ -72,6 +76,8 @@ dataSources:
         - name: StabilityPool
           file: ./abis/StabilityPool.json
       eventHandlers:
+        - event: BorrowerOperationsAddressChanged(address)
+          handler: handleBorrowerOperationsAddressChanged
         - event: UserDepositChanged(indexed address,uint256)
           handler: handleUserDepositChanged
         - event: ETHGainWithdrawn(indexed address,uint256,uint256)
@@ -80,45 +86,3 @@ dataSources:
           handler: handleFrontendRegistered
         - event: FrontEndTagSet(indexed address,indexed address)
           handler: handleFrontendTagSet
-  - name: CollSurplusPool
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: CollSurplusPool
-      address: "0x3D32e8b97Ed5881324241Cf03b2DA5E2EBcE5521"
-      startBlock: 12178578
-    mapping:
-      file: ./src/mappings/CollSurplusPool.ts
-      language: wasm/assemblyscript
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      entities:
-        - todo
-      abis:
-        - name: CollSurplusPool
-          file: ./abis/CollSurplusPool.json
-      eventHandlers:
-        - event: CollBalanceUpdated(indexed address,uint256)
-          handler: handleCollSurplusBalanceUpdated
-  - name: LQTYStaking
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: LQTYStaking
-      address: "0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d"
-      startBlock: 12178607
-    mapping:
-      file: ./src/mappings/LqtyStake.ts
-      language: wasm/assemblyscript
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      entities:
-        - todo
-      abis:
-        - name: LQTYStaking
-          file: ./abis/LQTYStaking.json
-      eventHandlers:
-        - event: StakeChanged(indexed address,uint256)
-          handler: handleStakeChanged
-        - event: StakingGainsWithdrawn(indexed address,uint256,uint256)
-          handler: handleStakeGainsWithdrawn

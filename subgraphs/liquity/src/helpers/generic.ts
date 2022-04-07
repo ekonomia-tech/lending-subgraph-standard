@@ -14,3 +14,8 @@ export let EthToLUSD = BigDecimal.fromString('0.9')
 export let zeroBD = BigDecimal.fromString('0')
 export let zeroInt = BigInt.fromString('0')
 export let mantissaFactorBD: BigDecimal = exponentToBigDecimal(18)
+
+export const EthAddr = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+export const LUSDAddr = '0x5f98805A4E8be255a32880FDeC7F6728C6568bA0'
+
+export const LiquityBorrowerOpsAddr = '0x24179CD81c9e782A4096035f7eC97fB8B783e007'

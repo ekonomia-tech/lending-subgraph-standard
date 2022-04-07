@@ -76,7 +76,7 @@ type Market @entity {
   "Underlying Asset"
   asset: Asset!
   "Borrowed asset if there is one"
-  collateralBackedAsset: Asset
+  collateralBackedAsset: Asset!
   "CToken symbol"
   symbol: String!
   "Current deposited amount in depositAsset"
