@@ -1,19 +1,14 @@
-import { ethereum, Address, BigInt, BigDecimal, log } from '@graphprotocol/graph-ts'
+import { Address, BigDecimal } from '@graphprotocol/graph-ts'
 import { Event } from '../../generated/schema'
-import { Market, AccountInMarket } from '../../generated/schema'
+import { Market } from '../../generated/schema'
 import { getOrCreateLUSD, getOrCreateEther } from '../helpers/asset'
 import {
   TroveUpdated,
   LUSDBorrowingFeePaid,
   TroveManagerAddressChanged,
 } from '../../generated/BorrowerOperations/BorrowerOperations'
-import {
-  addToLiquidationCount,
-  getOrCreateAccount,
-  markAccountAsBorrowed,
-  updateAccountStats,
-} from '../helpers/account'
-import { getMarket, updateMarketStats } from '../helpers/market'
+import { getOrCreateAccount, markAccountAsBorrowed, updateAccountStats } from '../helpers/account'
+import { updateMarketStats } from '../helpers/market'
 import { getOrCreateACM } from '../helpers/acm'
 
 import { createProtocol, getProtocol } from '../helpers/protocol'
@@ -42,17 +37,10 @@ export function handleTroveManagerAddressChanged(event: TroveManagerAddressChang
 /**
  * @notice Updates subgraph according to scenario that TroveUpdate is occurring in
  * @param event TroveUpdated
- * @dev     event TroveUpdated(address indexed _borrower, uint _debt, uint _coll, uint stake, BorrowerOperation operation);
  */
 export function handleTroveUpdated(event: TroveUpdated): void {
-  /**
-   * @dev General things that have to be updated no matter what the TroveUpdate
-   * market, protocol, asset, account, event. These things are used to update everything that is cookie-cutter with the basics of a lending position. topup, withdraw, increase loan, repay.
-   */
   let market = createOrGetMarket(LiquityBorrowerOpsAddr)
-
   let protocol = getProtocol(market.protocol)
-
   let asset = getOrCreateLUSD(market.collateralBackedAsset)
   let account = getOrCreateAccount(event.params._borrower.toHexString())
   let operation = getTroveOperationFromBorrowerOperation(event.params.operation)
@@ -108,6 +96,7 @@ export function handleTroveUpdated(event: TroveUpdated): void {
     openTroveEventEntry2.eventType = 'BORROW'
     openTroveEventEntry2.market = market.id
     openTroveEventEntry2.account = account.id
+
     // This is the amount initially borrowed, during openTrove() this includes all the fees.
     openTroveEventEntry2.amount = borrowAmount
     openTroveEventEntry2.blockTime = event.block.timestamp.toI32()
@@ -125,10 +114,11 @@ export function handleTroveUpdated(event: TroveUpdated): void {
   }
 
   // 'closeTrove' triggers both 'REPAY' and 'WITHDRAW', 2 events within one.
-  // subgraph loads old protocol total for account. Added amounts of LUSD and Collateral are adjusted in other functions and eventHandlers.
-  // Then we subtract old total for account from all totals (protocol, market)
-  // Then we mark the account as repaid? Have to see how the schema is set up for it.
-  // Finally we close out the Trove by ^ and changing its collateral, and borrowing amounts to 0.
+  // TODO: reformat code: can move this into a better spot / think about better code reformat.
+  const acmOld = getOrCreateACM(account.id.concat('-').concat(market.id), account.id)
+  const accountOldDebt = acmOld.borrowed
+  const accountOldColl = acmOld.deposited
+
   if (operation == 'closeTrove') {
     //repay debt in full
 
@@ -138,20 +128,15 @@ export function handleTroveUpdated(event: TroveUpdated): void {
       .concat(event.transactionLogIndex.toString())
       .concat('-')
       .concat('1')
-    // this is the collateral, no fees applied. Fees applied in LUSD.
 
     let closeTroveEventEntry1 = new Event(eventId1)
     // TODO: I wonder if 'CLOSE' is a good addition to this field.
     closeTroveEventEntry1.eventType = 'REPAY'
 
-    let acmOld = getOrCreateACM(account.id.concat('-').concat(market.id), account.id)
-    let accountOldDebt = acmOld.borrowed
-    // update event happens every time. Only difference is those highlighted below
     closeTroveEventEntry1.market = market.id
     closeTroveEventEntry1.account = account.id
     closeTroveEventEntry1.blockTime = event.block.timestamp.toI32()
     closeTroveEventEntry1.blockNumber = event.block.number.toI32()
-    // different and likely belongs in their own respective if statements.
     closeTroveEventEntry1.amount = accountOldDebt
     closeTroveEventEntry1.save()
     updateMarketStats(market.id, closeTroveEventEntry1.eventType, accountOldDebt)
@@ -163,7 +148,7 @@ export function handleTroveUpdated(event: TroveUpdated): void {
       closeTroveEventEntry1.eventType,
     )
 
-    // second event within openTrove() scenario
+    // second event within closeTrove() scenario
     let eventId2 = event.transaction.hash
       .toHexString()
       .concat('-')
@@ -173,14 +158,11 @@ export function handleTroveUpdated(event: TroveUpdated): void {
     let closeTroveEventEntry2 = new Event(eventId2)
     closeTroveEventEntry2.eventType = 'WITHDRAW'
 
-    let accountOldColl = acmOld.deposited
-
-    // update event happens every time. Only difference is those highlighted below
     closeTroveEventEntry2.market = market.id
     closeTroveEventEntry2.account = account.id
     closeTroveEventEntry2.blockTime = event.block.timestamp.toI32()
     closeTroveEventEntry2.blockNumber = event.block.number.toI32()
-    // different and likely belongs in their own respective if statements.
+
     closeTroveEventEntry2.amount = accountOldColl
     closeTroveEventEntry2.save()
     updateMarketStats(market.id, closeTroveEventEntry2.eventType, accountOldColl)
@@ -192,54 +174,47 @@ export function handleTroveUpdated(event: TroveUpdated): void {
       closeTroveEventEntry2.eventType,
     )
     return
-
-    // emit TroveUpdated(msg.sender, 0, 0, 0, BorrowerOperation.closeTrove);
   }
 
-  // // get event entity id if not openTrove() or closeTrove() scenario
-  // let eventId = event.transaction.hash
-  //   .toHexString()
-  //   .concat('-')
-  //   .concat(event.transactionLogIndex.toString())
-  // // generate new event entity
-  // let eventEntry = new Event(eventId)
-  // // must be adjustTrove, and Trove must exist or else this event wouldn't be emitted I believe. TODO: confirm that.
-  // // TODO: Also need to figure out how to discern which scenario it is within the AdjustTrove() event emission... we may need to bind to the contract to read the function _adjustTrove(). It will cause significant time usage in sync.
-  // // TODO: Could go about it and:
-  // // 1. Load the account, check to see if certain trove details have changed... if trove.debt != event.params.debt, then we know that more LUSD was withdrawn.
-  // if ('Insert check if it is addColl(), withdrawColl(), WithdrawLUSD(), repayLUSD()') {
-  // }
-  // // update event happens every time. Only difference is those highlighted below
-  // eventEntry.market = market.id
-  // eventEntry.account = account.id
-  // eventEntry.blockTime = event.block.timestamp.toI32()
-  // eventEntry.blockNumber = event.block.number.toI32()
-  // // different and likely belongs in their own respective if statements.
-  // eventEntry.amount = borrowAmount
-  // eventEntry.borrowRate = event.params.borrowRate
-  // eventEntry.interestRateMode = event.params.borrowRateMode.toI32()
-  // eventEntry.save()
-  // updateMarketStats(market.id, eventEntry.eventType, borrowAmount)
-  // updateAccountStats(protocol.id, market.id, account.id, borrowAmount, eventEntry.eventType)
-  // /**
-  //  * @dev This is the addColl()) scenario
-  //  */
-  // /**
-  //  * @dev This is the withdrawColl() scenario
-  //  */
-  // /**
-  //  * @dev this is the withdrawLUSD() scenario
-  //  */
-  // /**
-  //  * @dev this is the repayLUSD() scenario
-  //  */
-  // /**
-  //  * @dev This is the closeTrove() scenario
-  //  * TroveUpdated emitted before the actual LUSD is moved from the msg.sender, decreased in the ActivePool contract, and burnt.
-  //  */
+  // get event entity id if not openTrove() or closeTrove() scenario, must be adjustTrove() scenario then
+  let eventId = event.transaction.hash
+    .toHexString()
+    .concat('-')
+    .concat(event.transactionLogIndex.toString())
+  // generate new event entity
+  let eventEntry = new Event(eventId)
+  let changedAmount: BigDecimal
+
+  // We have multiple scenarios: TODO: not sure if I should 'xTokenAmount' for LUSD, or just use 'Amount' in schema for collateral and debt
+  // 1. addColl() where either account or SP send ETH to trove position. (collAmount > previousCollAmount)
+  // 2. withdrawColl() where ETH is withdrawn from Trove. (collAmount < previousCollAmount)
+  // 3. withdrawLUSD() where debt is increased, assuming normal mode here and fee is added. TODO: figure out how 'recovery' mode would be situated in this. (borrowAmount > previousDebt)
+  // 4. repayLUSD() where specified amount of LUSD of borrower's trove is burnt. (borrowAmount < previousDebt)
+  if (collAmount > accountOldColl) {
+    eventEntry.eventType = 'DEPOSIT'
+    // get the amount that will be recorded in the event entity.
+    // the amount used in event entity will be used in updateMarketStats and updateAccountStats (acm, and acp, respectively).
+    // TODO: figure out arithemtic for BigDecimals again
+    changedAmount = collAmount - accountOldColl
+  } else if (collAmount < accountOldColl) {
+    eventEntry.eventType = 'WITHDRAW'
+    changedAmount = accountOldColl - collAmount
+  } else if (borrowAmount < accountOldDebt) {
+    eventEntry.eventType = 'BORROW'
+    changedAmount = accountOldDebt - borrowAmount
+  }
+
+  eventEntry.market = market.id
+  eventEntry.account = account.id
+  eventEntry.amount = changedAmount
+  eventEntry.blockTime = event.block.timestamp.toI32()
+  eventEntry.blockNumber = event.block.number.toI32()
+  eventEntry.save()
+  updateMarketStats(market.id, eventEntry.eventType, changedAmount)
+  updateAccountStats(protocol.id, market.id, account.id, changedAmount, eventEntry.eventType)
 }
 
-export function handleLUSDBorrowingFeePaid(event: LUSDBorrowingFeePaid): void {}
+/* ========== HELPER FUNCTIONS ========== */
 
 function createOrGetMarket(marketAddr: string): Market {
   let market = Market.load(marketAddr)
@@ -249,10 +224,9 @@ function createOrGetMarket(marketAddr: string): Market {
   let protocol = getProtocol('LIQUITY-ETHEREUM')
 
   market = new Market(marketAddr)
-  // let asset = getOrCreateAsset(event.params.asset.toHexString())
+
   let asset = getOrCreateEther(EthAddr)
   let LUSD = getOrCreateLUSD(LUSDAddr)
-  // log.info('ActivePoolAddressChangedCALLED: {}', ['YAYYYYY'])
 
   market.name = asset.name
   market.protocol = protocol.id
@@ -276,21 +250,7 @@ function createOrGetMarket(marketAddr: string): Market {
   return market
 }
 
-// export function createOrGetNFT(tokenId: string, nftValue: BigInt): NFT {
-//   let nft = NFT.load(tokenId)
-//   if (nft != null) return nft
+/* ========== TBD FUNCTIONS ========== */
 
-//   nft = new NFT(tokenId)
-//   // obtain nft fields throughs calculating off of encoded value
-//   nft.value = nftValue
-//   nft.mass = (nftValue % CLASS_MULTIPLIER) as BigInt
-//   const bigIntTier: BigInt = nftValue / CLASS_MULTIPLIER
-//   const tier = checkMergeClass(bigIntTier)
-//   nft.tier = tier
-//   nft.color = checkColor(tier)
-//   nft.isAlpha = false
-//   nft.mergeCount = 0
-//   nft.save()
-
-//   return nft
-// }
+// TODO: I think that capturing fees paid for a lending protocol is of interest in a lending protocol standard. For the purposes of our subgraph it is not important though.
+export function handleLUSDBorrowingFeePaid(event: LUSDBorrowingFeePaid): void {}

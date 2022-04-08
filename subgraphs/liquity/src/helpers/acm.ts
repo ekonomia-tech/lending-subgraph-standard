@@ -1,12 +1,11 @@
-import { BigDecimal, BigInt } from '@graphprotocol/graph-ts'
-import { Account, AccountInMarket, AccountInProtocol } from '../../generated/schema'
-import { zeroBD, zeroInt } from './generic'
+import { AccountInMarket } from '../../generated/schema'
+import { zeroBD } from './generic'
 
 export function getOrCreateACM(acmId: string, account: string): AccountInMarket {
   let acm = AccountInMarket.load(acmId)
   if (!acm) {
     acm = new AccountInMarket(acmId)
-    acm.account = account // pass in account ID
+    acm.account = account
     acm.deposited = zeroBD
     acm.borrowed = zeroBD
     acm.lifetimeDeposited = zeroBD

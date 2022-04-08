@@ -1,6 +1,6 @@
 import { BigDecimal, BigInt } from '@graphprotocol/graph-ts'
 import { Account, AccountInMarket, AccountInProtocol } from '../../generated/schema'
-import { zeroBD, zeroInt } from './generic'
+import { zeroBD } from './generic'
 
 export function getOrCreateAccount(accountId: string): Account {
   let account = Account.load(accountId)
