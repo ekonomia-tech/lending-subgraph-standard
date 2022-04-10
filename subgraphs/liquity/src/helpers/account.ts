@@ -1,4 +1,4 @@
-import { BigDecimal, BigInt } from '@graphprotocol/graph-ts'
+import { BigDecimal } from '@graphprotocol/graph-ts'
 import { Account, AccountInMarket, AccountInProtocol } from '../../generated/schema'
 import { zeroBD } from './generic'
 

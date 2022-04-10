@@ -3,7 +3,6 @@ import { Protocol } from '../../generated/schema'
 
 /**
  * @notice This protocol-entity helper function is fairly in line with that used within other lending protocol subgraphs within Ekonomia-tech so far.
- * @dev the only differences between the various subgraph helper functions of the same entity name (protocol for example) are specifics such as 'type' fields.
  */
 
 export function createProtocol(protocolAddress: Address, name: string): Protocol {

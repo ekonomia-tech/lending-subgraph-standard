@@ -6,6 +6,6 @@ import { CollBalanceUpdated } from '../../generated/CollSurplusPool/CollSurplusP
 - Also holds ETH surplus from Troves with ICR > MCR that were liquidated in Recovery Mode.
 */
 
-/* ========== EVENT HANDLERS ========== */
+/* ========== TBD FUNCTIONS ========== */
 
 export function handleCollSurplusBalanceUpdated(event: CollBalanceUpdated): void {}

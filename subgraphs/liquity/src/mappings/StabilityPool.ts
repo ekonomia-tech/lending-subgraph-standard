@@ -10,7 +10,7 @@ import {
  * @dev TODO: include this in future parts of the subgraph possibly. Not pertinent to the scope of this version.
  */
 
-/* ========== EVENT HANDLERS ========== */
+/* ========== TBD FUNCTIONS ========== */
 
 /**
  * @dev hardcoding in details here since we only have one market (ETHER = lendingAsset, LUSD = borrowAsset)

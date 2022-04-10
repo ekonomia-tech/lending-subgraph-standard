@@ -3,7 +3,6 @@ import { Market } from '../../generated/schema'
 
 /**
  * @notice This market-entity helper function is fairly in line with that used within other lending protocol subgraphs within Ekonomia-tech so far.
- * @dev NOTE: `handleReserveInitialized()` within `lendingPoolConfigurator.ts` is where the `market` is initialized for this protocol.
  */
 
 export function getMarket(marketId: string): Market {

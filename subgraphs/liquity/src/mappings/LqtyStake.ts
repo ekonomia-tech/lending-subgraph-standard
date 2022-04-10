@@ -4,7 +4,7 @@ import { StakeChanged, StakingGainsWithdrawn } from '../../generated/LQTYStaking
  * @dev TODO: include this in future parts of the subgraph possibly. Not pertinent to the scope of this version.
  */
 
-/* ========== EVENT HANDLERS ========== */
+/* ========== TBD FUNCTIONS ========== */
 
 export function handleStakeChanged(event: StakeChanged): void {}
 

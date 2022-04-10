@@ -24,6 +24,12 @@ import {
 } from '../helpers/generic'
 import { getTroveOperationFromBorrowerOperation } from '../helpers/TroveOperation'
 
+/**
+ * @title BorrowerOperations.ts
+ * @notice this is the mapping that queries details from BorrowerOperations.sol, the smart contract within Liquity protocol that handles basic operations borrowers use to interact with their Trove: trove creation, eth top-up / withdrawal, stablecoin issuance and repayment.
+ * @dev majority of entity population for "Lending Subgraph Standard v1" are through this mapping file at the moment.
+ */
+
 /* ========== EVENT HANDLERS ========== */
 
 /**
@@ -37,6 +43,11 @@ export function handleTroveManagerAddressChanged(event: TroveManagerAddressChang
 /**
  * @notice Updates subgraph according to scenario that TroveUpdate is occurring in
  * @param event TroveUpdated
+ *  We have multiple scenarios: TODO: not sure if I should 'xTokenAmount' for LUSD, or just use 'Amount' in schema for collateral and debt
+  1. addColl() where either account or SP send ETH to trove position. (collAmount > previousCollAmount)
+  2. withdrawColl() where ETH is withdrawn from Trove. (collAmount < previousCollAmount)
+  3. withdrawLUSD() where debt is increased, assuming normal mode here and fee is added. TODO: figure out how 'recovery' mode would be situated in this. (borrowAmount > previousDebt)
+  4. repayLUSD() where specified amount of LUSD of borrower's trove is burnt. (borrowAmount < previousDebt)
  */
 export function handleTroveUpdated(event: TroveUpdated): void {
   let market = createOrGetMarket(LiquityBorrowerOpsAddr)
@@ -49,6 +60,7 @@ export function handleTroveUpdated(event: TroveUpdated): void {
     .toBigDecimal()
     .div(exponentToBigDecimal(asset.decimals))
     .truncate(asset.decimals)
+
   // this is requested borrow + LUSD_FEE (borrowing fee) + GAS Compensation FEE (LUSD) which is returned upon closing Trove or given to liquidator.
   let borrowAmount = event.params._debt
     .toBigDecimal()
@@ -130,6 +142,7 @@ export function handleTroveUpdated(event: TroveUpdated): void {
       .concat('1')
 
     let closeTroveEventEntry1 = new Event(eventId1)
+
     // TODO: I wonder if 'CLOSE' is a good addition to this field.
     closeTroveEventEntry1.eventType = 'REPAY'
 
@@ -181,20 +194,13 @@ export function handleTroveUpdated(event: TroveUpdated): void {
     .toHexString()
     .concat('-')
     .concat(event.transactionLogIndex.toString())
+
   // generate new event entity
   let eventEntry = new Event(eventId)
   let changedAmount: BigDecimal
 
-  // We have multiple scenarios: TODO: not sure if I should 'xTokenAmount' for LUSD, or just use 'Amount' in schema for collateral and debt
-  // 1. addColl() where either account or SP send ETH to trove position. (collAmount > previousCollAmount)
-  // 2. withdrawColl() where ETH is withdrawn from Trove. (collAmount < previousCollAmount)
-  // 3. withdrawLUSD() where debt is increased, assuming normal mode here and fee is added. TODO: figure out how 'recovery' mode would be situated in this. (borrowAmount > previousDebt)
-  // 4. repayLUSD() where specified amount of LUSD of borrower's trove is burnt. (borrowAmount < previousDebt)
   if (collAmount > accountOldColl) {
     eventEntry.eventType = 'DEPOSIT'
-    // get the amount that will be recorded in the event entity.
-    // the amount used in event entity will be used in updateMarketStats and updateAccountStats (acm, and acp, respectively).
-    // TODO: figure out arithemtic for BigDecimals again
     changedAmount = collAmount - accountOldColl
   } else if (collAmount < accountOldColl) {
     eventEntry.eventType = 'WITHDRAW'
@@ -236,8 +242,8 @@ function createOrGetMarket(marketAddr: string): Market {
   market.deposited = zeroBD
   market.borrowed = zeroBD
   market.interestRateModelAddress = Address.empty()
-  market.exchangeRate = EthToLUSD // TODO: If attainable from raw Event data or from contract getter, then connect it to that so we have the raw format
-  market.collateralFactor = TCR_min // TODO: If attainable from raw Event data or from contract getter, then connect it to that so we have the raw format --> also, should this be 110% (aka 110) or 1.1 in the end? As well, should we have a TCR?
+  market.exchangeRate = EthToLUSD // TODO: as per chat with Niv: If attainable from raw Event data or from contract getter, then connect it to that so we have the raw format
+  market.collateralFactor = TCR_min // TODO: as per chat with Niv: If attainable from raw Event data or from contract getter, then connect it to that so we have the raw format --> also, should this be 110% (aka 110) or 1.1 in the end? As well, should we have a TCR?
   market.stableInterestDebtToken = null
   market.variableInterestDebtToken = null
   market.liquidityRate = zeroInt
@@ -252,5 +258,4 @@ function createOrGetMarket(marketAddr: string): Market {
 
 /* ========== TBD FUNCTIONS ========== */
 
-// TODO: I think that capturing fees paid for a lending protocol is of interest in a lending protocol standard. For the purposes of our subgraph it is not important though.
 export function handleLUSDBorrowingFeePaid(event: LUSDBorrowingFeePaid): void {}
