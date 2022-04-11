@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@graphprotocol/contracts": "^1.10.5-testnet-nft",
-    "@graphprotocol/graph-cli": "0.28.0",
+    "@graphprotocol/graph-cli": "^0.29.0",
     "@graphprotocol/graph-ts": "0.26.0",
     "@types/node": "^17.0.19",
     "@typescript-eslint/eslint-plugin": "^5.15.0",

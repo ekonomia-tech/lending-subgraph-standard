@@ -1,6 +1,10 @@
 import { BigDecimal } from '@graphprotocol/graph-ts'
 import { Market } from '../../generated/schema'
 
+/**
+ * @notice This market-entity helper function is fairly in line with that used within other lending protocol subgraphs within Ekonomia-tech so far.
+ */
+
 export function getMarket(marketId: string): Market {
   let market = Market.load(marketId)
   if (market) {

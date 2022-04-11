@@ -1,15 +1,15 @@
-import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
+import { BigDecimal, BigInt } from '@graphprotocol/graph-ts'
 
 export function exponentToBigDecimal(decimals: i32): BigDecimal {
-    let bd = BigDecimal.fromString('1')
-    for (let i = 0; i < decimals; i++) {
-      bd = bd.times(BigDecimal.fromString('10'))
-    }
-    return bd
+  let bd = BigDecimal.fromString('1')
+  for (let i = 0; i < decimals; i++) {
+    bd = bd.times(BigDecimal.fromString('10'))
+  }
+  return bd
 }
 
 export let zeroBD = BigDecimal.fromString('0')
-export let zeroInt = BigInt.fromString('0');
+export let zeroInt = BigInt.fromString('0')
 export let mantissaFactorBD: BigDecimal = exponentToBigDecimal(18)
 export let cTokenDecimalsBD: BigDecimal = exponentToBigDecimal(8)
 export let cTokenDecimals = 8

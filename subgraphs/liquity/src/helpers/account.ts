@@ -1,6 +1,6 @@
-import { BigDecimal, BigInt } from '@graphprotocol/graph-ts'
+import { BigDecimal } from '@graphprotocol/graph-ts'
 import { Account, AccountInMarket, AccountInProtocol } from '../../generated/schema'
-import { zeroBD, zeroInt } from './generic'
+import { zeroBD } from './generic'
 
 export function getOrCreateAccount(accountId: string): Account {
   let account = Account.load(accountId)
@@ -69,6 +69,14 @@ export function getOrCreateAccountInMarket(marketId: string, accountId: string):
   return acm
 }
 
+/**
+ * TODO: Update acp totals like lifetimeDepositedUSD WHEN we figure out how to best adjust respective token and its USD price at that point in time. I'll leave them as commented out updates though in my mapping.
+ * @param protocolId Protocol Name
+ * @param marketId Market-Creating Ext. Contract Address
+ * @param accountId Ext. Address of account
+ * @param amount
+ * @param eventType VIP parameter dictating how acp and acm are updated
+ */
 export function updateAccountStats(
   protocolId: string,
   marketId: string,
@@ -82,30 +90,35 @@ export function updateAccountStats(
     acm.depositCount += 1
     acm.deposited = acm.deposited.plus(amount)
     acm.lifetimeDeposited = acm.lifetimeDeposited.plus(amount)
+    // acp.lifetimeDepositedUSD = acp.lifetimeDepositedUSD.plus(amount) // TODO: convert to USD
 
     acp.depositCount += 1
   } else if (eventType == 'WITHDRAW') {
     acm.withdrawCount += 1
     acm.deposited = acm.deposited.minus(amount)
     acm.lifetimeWithdrawn = acm.lifetimeWithdrawn.plus(amount)
+    // acp.lifetimeWithdrawnUSD = acp.lifetimeWithdrawnUSD.plus(amount) // TODO: convert to USD
 
     acp.withdrawCount += 1
   } else if (eventType == 'BORROW') {
     acm.borrowCount += 1
     acm.borrowed = acm.borrowed.plus(amount)
     acm.lifetimeBorrowed = acm.lifetimeBorrowed.plus(amount)
+    // acp.lifetimeBorrowedUSD = acp.lifetimeBorrowedUSD.plus(amount) // TODO: convert to USD
 
     acp.borrowCount += 1
   } else if (eventType == 'REPAY') {
     acm.repayCount += 1
     acm.borrowed = acm.borrowed.minus(amount)
     acm.lifetimeRepaid = acm.lifetimeRepaid.plus(amount)
+    // acp.lifetimeRepaidUSD = acp.lifetimeRepaidUSD.plus(amount) // TODO: convert to USD
 
     acp.repayCount += 1
   } else if (eventType == 'LIQUIDATION') {
     acm.liquidatedCount += 1
     acm.borrowed = acm.borrowed.minus(amount)
     acm.lifetimeLiquidated = acm.lifetimeLiquidated.plus(amount)
+    // acp.lifetimeLiquidatedUSD = acp.lifetimeLiquidatedUSD.plus(amount) // TODO: convert to USD
 
     acp.liquidatedCount += 1
   }
