@@ -1,0 +1,63 @@
+specVersion: 0.0.2
+description: Abracadabra.money is a lending platform that uses interest-bearing tokens (ibTKNs) as collateral to borrow a USD pegged stablecoin (Magic Internet Money - MIM), that can be used as any other traditional stablecoin.
+repository: https://github.com/ekonomia-tech/lending-subgraph-standard
+schema:
+  file: ../../schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: DegenBox
+    network: mainnet
+    source:
+      address: "0xd96f48665a1410C0cd669A88898ecA36B9Fc2cce"
+      abi: DegenBox
+      startBlock: 13418000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/degenbox.ts
+      entities:
+        - Protocol
+      abis:
+        - name: DegenBox
+          file: ./abis/degenbox.json
+        - name: cauldron
+          file: ./abis/cauldron.json
+        - name: ERC20
+          file: ./abis/erc20.json
+      eventHandlers:
+        - event: LogDeploy(indexed address,bytes,indexed address)
+          handler: handleLogDeploy
+templates:
+  - name: cauldron
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: cauldron
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      file: ./src/mappings/cauldron.ts
+      entities:
+        - Market
+      abis:
+        - name: cauldron
+          file: ./abis/cauldron.json
+        - name: DegenBox
+          file: ./abis/degenbox.json
+        - name: ERC20
+          file: ./abis/erc20.json
+      eventHandlers:
+        - event: LogAddCollateral(indexed address,indexed address,uint256)
+          handler: handleLogAddCollateral
+        - event: LogRemoveCollateral(indexed address,indexed address,uint256)
+          handler: handleLogRemoveCollateral
+        - event: LogBorrow(indexed address,indexed address,uint256,uint256)
+          handler: handleLogBorrow
+        - event: LogRepay(indexed address,indexed address,uint256,uint256)
+          handler: handleLogRepay
+        # - event: LogWithdrawFees(indexed address,uint256)
+        #   handler: handleLogWithdrawFees
+        # - event: LogExchangeRate(uint256)
+        #   handler: handleLogExchangeRate
